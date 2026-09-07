@@ -53,6 +53,8 @@ APP_LOGO_FALLBACK = "📈"
 AI_AVATAR_FALLBACK = "🤖"
 
 from engine import (
+    load_dvm_scores,
+
     add_days_since_cross,
     calculate_indicators,
     convergence_table,
@@ -64,6 +66,8 @@ from engine import (
     download_prices,
 )
 
+
+IS_BETA = st.query_params.get('beta') == 'true'
 
 st.set_page_config(
     page_title="Nifty Market Terminal",
@@ -835,12 +839,22 @@ def scan_page():
                     f"unresolved symbols: {failures}"
                 )
 
-            prices, failures = download_prices(
-                universe,
-                years=history_years,
-                batch_size=batch_size,
-                progress_callback=update,
-            )
+            if IS_BETA:
+                st.info("BETA MODE: Loading offline data (Zero Live Compute)")
+                import os
+                if os.path.exists("cache.parquet"):
+                    prices = pd.read_parquet("cache.parquet")
+                    failures = []
+                else:
+                    st.error("Offline cache.parquet not found. Run build_cache.py")
+                    st.stop()
+            else:
+                prices, failures = download_prices(
+                    universe,
+                    years=history_years,
+                    batch_size=batch_size,
+                    progress_callback=update,
+                )
 
             if prices.empty:
                 st.error("No usable market data was returned.")
@@ -852,6 +866,16 @@ def scan_page():
             snapshot = add_days_since_cross(indicators, snapshot)
             convergence = convergence_table(snapshot)
             convergence_v2 = convergence_table_v2(snapshot)
+            
+            if IS_BETA:
+                dvm = load_dvm_scores()
+                if not dvm.empty:
+                    snapshot = snapshot.merge(dvm, on="Yahoo Symbol", how="left")
+                    convergence = convergence.merge(dvm, on="Yahoo Symbol", how="left")
+                    convergence_v2 = convergence_v2.merge(dvm, on="Yahoo Symbol", how="left")
+                    
+                    mask = (snapshot["valuation_confidence"] == "Low") | (snapshot["durability_confidence"] == "Low")
+                    snapshot.loc[mask, "Symbol"] = "⚠️ " + snapshot.loc[mask, "Symbol"].astype(str)
             
             st.session_state["universe"] = universe
             st.session_state["prices"] = prices
@@ -2054,6 +2078,8 @@ def _ai_stock_context(symbol):
             "ai_must_not_recalculate_or_change_scores": True,
             "missing_data_must_be_called_missing": True,
             "strategy_membership_must_come_from_strategy_status": True,
+            "ai_must_not_generate_fundamentals_outside_scorecard": True,
+            "ai_must_not_see_trendlyne_widgets": True,
         },
     }
 
@@ -2627,6 +2653,26 @@ This is an evidence-based action classification for the current supplied data, n
         raise RuntimeError("Gemini returned no usable text. Try a shorter question.")
     return answer
 
+
+def render_trendlyne_widgets(symbol: str):
+    import streamlit.components.v1 as components
+    tl_sym = symbol.replace(".NS", "")
+    st.subheader("Trendlyne Consensus")
+    st.caption("Note: AI analysis is generated exclusively from CapitalSense proprietary data and cannot read external Trendlyne widgets.")
+    
+    html_code = f"""
+    <div style="display: flex; flex-direction: row; gap: 20px;">
+        <div style="flex: 1; min-width: 300px;">
+            <div class="tl-swot-widget" data-ticker="{tl_sym}" data-exchange="NSE" data-theme="light" data-font="Helvetica"></div>
+        </div>
+        <div style="flex: 1; min-width: 300px;">
+            <div class="tl-qvt-widget" data-ticker="{tl_sym}" data-exchange="NSE" data-theme="light" data-font="Helvetica"></div>
+        </div>
+    </div>
+    <script async src="https://trendlyne.com/web-widget/widget.js"></script>
+    """
+    components.html(html_code, height=450, scrolling=True)
+
 def nifty_ai_page():
     require_scan()
     terminal_header(
@@ -2714,6 +2760,10 @@ def nifty_ai_page():
     if active_memberships:
         labels = "  •  ".join(name for name, _ in active_memberships)
         st.success(f"Current verified strategy membership: {labels}")
+
+    if IS_BETA:
+        st.divider()
+        render_trendlyne_widgets(selected)
 
     chat_key = f"nifty_ai_chat::{selected}"
     if chat_key not in st.session_state:

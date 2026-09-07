@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import time
 import random
+import os
 from datetime import date, timedelta
 from typing import Callable
 import re
@@ -11,6 +12,19 @@ import pandas as pd
 import requests
 import yfinance as yf
 import streamlit as st
+from fastparquet import ParquetFile
+
+@st.cache_data(ttl=3600)
+def load_dvm_scores() -> pd.DataFrame:
+    """Load precomputed DVM scores from the offline pipeline."""
+    try:
+        # In a real deployment, this might fetch from the GitHub Release URL.
+        # For now, we assume the parquet file is downloaded or exists locally.
+        if os.path.exists("dvm_scores.parquet"):
+            return pd.read_parquet("dvm_scores.parquet")
+    except Exception as e:
+        print(f"Failed to load DVM scores: {e}")
+    return pd.DataFrame()
 
 
 NSE_HEADERS = {
@@ -134,6 +148,76 @@ def load_universe(universe_name: str = "NIFTY TOTAL MARKET") -> pd.DataFrame:
     return result
 
 
+
+import os
+from abc import ABC, abstractmethod
+import requests
+
+class DataProvider(ABC):
+    @abstractmethod
+    def download_batch(self, symbols: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+        pass
+
+class YFinanceProvider(DataProvider):
+    def download_batch(self, symbols: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+        data = yf.download(
+            tickers=symbols,
+            start=start_date,
+            end=end_date,
+            interval="1d",
+            auto_adjust=False,
+            group_by="ticker",
+            threads=True,
+            progress=False,
+            timeout=30,
+        )
+        return _normalize_yfinance(data, symbols)
+
+class TiingoProvider(DataProvider):
+    def __init__(self):
+        # Tiingo is a fallback, requires API key
+        self.api_key = os.environ.get("TIINGO_API_KEY")
+        if not self.api_key:
+            try:
+                self.api_key = st.secrets.get("TIINGO_API_KEY")
+            except Exception:
+                pass
+
+    def download_batch(self, symbols: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+        if not self.api_key:
+            return pd.DataFrame()
+            
+        frames = []
+        for symbol in symbols:
+            # Tiingo expects NSE symbols without .NS usually, or we can use AlphaVantage.
+            # We'll just provide a skeleton that cleanly fails if not implemented perfectly,
+            # honoring the fallback design pattern request.
+            tiingo_sym = symbol.replace(".NS", "")
+            url = f"https://api.tiingo.com/tiingo/daily/{tiingo_sym}/prices"
+            params = {"startDate": start_date, "endDate": end_date, "token": self.api_key}
+            try:
+                resp = requests.get(url, params=params, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data:
+                        df = pd.DataFrame(data)
+                        df["Date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
+                        df["Yahoo Symbol"] = symbol
+                        df["Close"] = df["adjClose"]
+                        df["RawClose"] = df["close"]
+                        df["Open"] = df["adjOpen"]
+                        df["High"] = df["adjHigh"]
+                        df["Low"] = df["adjLow"]
+                        df["Volume"] = df["adjVolume"]
+                        frames.append(df)
+            except Exception:
+                pass
+                
+        if frames:
+            return pd.concat(frames, ignore_index=True)
+        return pd.DataFrame()
+
+
 def _normalize_yfinance(data: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
     """Normalize yfinance output while preserving adjusted and raw prices.
 
@@ -225,26 +309,24 @@ def download_price_batch(
     if not symbols:
         return pd.DataFrame()
 
-    for attempt in range(3):
+for attempt in range(3):
         try:
-            # Keep auto_adjust=False so RawClose and Adj Close are both
-            # available. _normalize_yfinance creates adjusted OHLC explicitly.
-            data = yf.download(
-                tickers=symbols,
-                start=start_date,
-                end=end_date,
-                interval="1d",
-                auto_adjust=False,
-                group_by="ticker",
-                threads=True,
-                progress=False,
-                timeout=30,
-            )
-            normalized = _normalize_yfinance(data, symbols)
+            # Try Primary Provider
+            provider = YFinanceProvider()
+            normalized = provider.download_batch(symbols, start_date, end_date)
             if not normalized.empty:
                 return normalized
         except Exception:
-            # Batch failure is handled by the caller's bounded fallback path.
+            pass
+            
+        try:
+            # Try Fallback Provider
+            fallback = TiingoProvider()
+            if fallback.api_key:
+                normalized = fallback.download_batch(symbols, start_date, end_date)
+                if not normalized.empty:
+                    return normalized
+        except Exception:
             pass
 
         time.sleep((1.0 * (2 ** attempt)) + random.uniform(0.0, 0.5))
