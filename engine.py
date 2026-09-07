@@ -309,7 +309,7 @@ def download_price_batch(
     if not symbols:
         return pd.DataFrame()
 
-for attempt in range(3):
+    for attempt in range(3):
         try:
             # Try Primary Provider
             provider = YFinanceProvider()
