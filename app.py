@@ -1197,7 +1197,7 @@ def build_final_buy_list(
             "Gap %": round(float(row["GapPct"]), 2) if pd.notna(row.get("GapPct")) else None,
             "P/E": fund.get("PE"), "Revenue Growth %": fund.get("Revenue Growth %"),
             "Net Profit Margin %": fund.get("Profit Margin %"), "Debt/Equity": fund.get("Debt/Equity"),
-            "EV/EBITDA", "ROE %": fund.get("EV/EBITDA", "ROE %"), "Market Cap": fund.get("Market Cap"),
+            "EV/EBITDA": fund.get("EV/EBITDA"), "ROE %": fund.get("ROE %"), "Market Cap": fund.get("Market Cap"),
             "Yahoo Symbol": row.get("Yahoo Symbol"),
         })
     final = pd.DataFrame(rows)
@@ -1244,10 +1244,11 @@ def _build_emerging_scored(snapshot=None):
             "Profit Margin %":pd.to_numeric(fund.get("Profit Margin %"),errors="coerce"),
             "Debt/Equity":pd.to_numeric(fund.get("Debt/Equity"),errors="coerce"),
             "P/E":pd.to_numeric(fund.get("PE"),errors="coerce"),
-            "EV/EBITDA", "ROE %":pd.to_numeric(fund.get("EV/EBITDA", "ROE %"),errors="coerce"),
+            "EV/EBITDA":pd.to_numeric(fund.get("EV/EBITDA"),errors="coerce"),
+            "ROE %":pd.to_numeric(fund.get("ROE %"),errors="coerce"),
             "Market Cap":pd.to_numeric(fund.get("Market Cap"),errors="coerce"),
         }
-        rg,mg,de,pe,ev=vals["Revenue Growth %"],vals["Profit Margin %"],vals["Debt/Equity"],vals["P/E"],vals["EV/EBITDA", "ROE %"]
+        rg,mg,de,pe,ev,roe=vals["Revenue Growth %"],vals["Profit Margin %"],vals["Debt/Equity"],vals["P/E"],vals["EV/EBITDA"],vals["ROE %"]
         fscore=(5 if pd.notna(rg) and rg>=15 else 3.5 if pd.notna(rg) and rg>0 else 1.5 if pd.notna(rg) and rg>-10 else 0)+(5 if pd.notna(mg) and mg>=15 else 3.5 if pd.notna(mg) and mg>0 else 1 if pd.notna(mg) and mg>-5 else 0)+(4 if pd.notna(de) and 0<=de<=1 else 3 if pd.notna(de) and de<=2 else 1.5 if pd.notna(de) and de<=3 else 0)+(3 if pd.notna(pe) and 0<pe<=30 else 2 if pd.notna(pe) and pe<=50 else 1 if pd.notna(pe) and pe<=75 else 0)+(3 if pd.notna(ev) and 0<ev<=20 else 2 if pd.notna(ev) and ev<=30 else 1 if pd.notna(ev) and ev<=50 else 0)
         for k,v in vals.items(): working.at[idx,k]=v
         working.at[idx,"Fundamental Score"]=round(min(fscore,20.0),1)
@@ -1771,7 +1772,8 @@ not a guaranteed buy signal.
                 "Profit Margin %": st.column_config.NumberColumn("Margin", format="%.1f%%"),
                 "Debt/Equity": st.column_config.NumberColumn("D/E", format="%.2f"),
                 "P/E": st.column_config.NumberColumn("P/E", format="%.1f"),
-                "EV/EBITDA", "ROE %": st.column_config.NumberColumn("EV/EBITDA", "ROE %", format="%.1f"),
+                "EV/EBITDA": st.column_config.NumberColumn("EV/EBITDA", format="%.1f"),
+                "ROE %": st.column_config.NumberColumn("ROE %", format="%.1f"),
             },
         )
         st.download_button(
