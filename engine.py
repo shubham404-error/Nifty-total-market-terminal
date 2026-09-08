@@ -12,7 +12,6 @@ import pandas as pd
 import requests
 import yfinance as yf
 import streamlit as st
-from fastparquet import ParquetFile
 
 @st.cache_data(ttl=3600)
 def load_dvm_scores() -> pd.DataFrame:
