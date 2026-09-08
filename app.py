@@ -71,7 +71,23 @@ IS_BETA = st.query_params.get('beta') == 'true'
 
 st.set_page_config(
     page_title="Nifty Market Terminal",
-    page_icon=str(APP_FAVICON_PATH) if APP_FAVICON_PATH.is_file() else "📈",
+    page_icon=str(APP_FAVICON_PATH)
+
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap');
+
+html, body, [class*="css"]  {
+    font-family: 'Inter', sans-serif !important;
+}
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Clash Display', sans-serif !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+ if APP_FAVICON_PATH.is_file() else "📈",
     layout="wide",
     initial_sidebar_state="auto",
 )
@@ -2977,3 +2993,4 @@ with st.sidebar:
 pg.run()
 
 render_terminal_footer()
+
