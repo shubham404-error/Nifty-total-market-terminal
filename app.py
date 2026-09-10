@@ -71,7 +71,10 @@ IS_BETA = st.query_params.get('beta') == 'true'
 
 st.set_page_config(
     page_title="Nifty Market Terminal",
-    page_icon=str(APP_FAVICON_PATH)
+    page_icon=str(APP_FAVICON_PATH) if APP_FAVICON_PATH.is_file() else "📈",
+    layout="wide",
+    initial_sidebar_state="auto",
+)
 
 st.markdown("""
 <style>
@@ -87,10 +90,7 @@ h1, h2, h3, h4, h5, h6 {
 </style>
 """, unsafe_allow_html=True)
 
- if APP_FAVICON_PATH.is_file() else "📈",
-    layout="wide",
-    initial_sidebar_state="auto",
-)
+
 
 
 # -------------------------------------------------------------------
