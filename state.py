@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
+from constants import AI_STRATEGY_PREFILTER_SCORE, AI_DEFAULT_FINAL_BUY_CONVICTION, AI_DEFAULT_FINAL_BUY_LIQUIDITY
 
 def _current_scan_id():
     """Stable identity for the current scan. Prevents stale strategy outputs."""
     existing = st.session_state.get("scan_id")
     if existing:
         return str(existing)
+    from ui.components import get_snapshot
+    import hashlib
     snapshot = get_snapshot()
     if isinstance(snapshot, pd.DataFrame) and not snapshot.empty:
         basis = snapshot[[c for c in ["Symbol", "Date", "Close"] if c in snapshot.columns]].copy()
@@ -44,11 +47,13 @@ def _ai_register_strategy_output(strategy_name, frame, metadata=None):
 def _ensure_ai_strategy_outputs():
     """Self-sufficient AI strategy build for the current scan only."""
     scan_id=_current_scan_id()
+    from ui.components import get_snapshot, get_convergence
+    from scoring import build_ai_confluence_pool, build_final_buy_list, _build_emerging_scored, build_emerging_buy_list
     registry=st.session_state.get("ai_strategy_registry",{})
     if not isinstance(registry,dict) or st.session_state.get("strategy_scan_id")!=scan_id:
         _invalidate_strategy_state(scan_id)
         registry={}
-    convergence=get_convergence()
+    convergence = get_convergence()
     confluence=build_ai_confluence_pool(convergence)
     final=build_final_buy_list(convergence,AI_DEFAULT_FINAL_BUY_CONVICTION,AI_DEFAULT_FINAL_BUY_LIQUIDITY,prefilter_score=AI_STRATEGY_PREFILTER_SCORE)
     emerging=_build_emerging_scored(get_snapshot())

@@ -1,8 +1,14 @@
 import pandas as pd
 import numpy as np
+import streamlit as st
 from engine import fundamental_snapshot
+from ui.components import get_convergence, get_snapshot
+
+from constants import AI_STRATEGY_PREFILTER_SCORE, AI_DEFAULT_FINAL_BUY_CONVICTION, AI_DEFAULT_FINAL_BUY_LIQUIDITY, AI_FUNDAMENTAL_FETCH_LIMIT
+
 
 def _fundamental_for_scan(namespace, yahoo_symbol):
+    from state import _current_scan_id
     scan_id = _current_scan_id()
     cache = st.session_state.setdefault(namespace, {})
     key = f"{scan_id}|{yahoo_symbol}"
