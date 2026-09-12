@@ -30,7 +30,7 @@ if scan_func_match:
                     universe,
                     years=history_years,
                     batch_size=batch_size,
-                    progress_callback=update,
+                    _progress_callback=update,
                 )
     """
     
@@ -39,7 +39,7 @@ if scan_func_match:
                 universe,
                 years=history_years,
                 batch_size=batch_size,
-                progress_callback=update,
+                _progress_callback=update,
             \)"""
     
     new_scan = re.sub(old_dl, new_download.strip(), old_scan)
