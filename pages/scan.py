@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
-from engine import download_prices, calculate_indicators, add_days_since_cross, investor_quality_gate, load_dvm_scores
+import hashlib
+from datetime import datetime
+from engine import download_prices, calculate_indicators, add_days_since_cross, investor_quality_gate, load_dvm_scores, load_universe, latest_snapshot, convergence_table
 from ui.components import get_snapshot, get_convergence, terminal_header, page_intro, guide, card, require_scan, ai_prefilter_note
 from ui.charts import market_chart
 from state import _invalidate_strategy_state, _ensure_ai_strategy_outputs, _ai_register_strategy_output, _strategy_cache_valid, _current_scan_id
@@ -8,6 +10,7 @@ from scoring import build_ai_confluence_pool, build_final_buy_list, _build_emerg
 from ai_service import _render_list_ai_terminal, _gemini_reply, _ai_consume_call
 
 def scan_page():
+    IS_BETA = st.query_params.get("beta") == "true"
     terminal_header(
         "Scan Engine",
         "Run one shared scan and reuse it everywhere else",
