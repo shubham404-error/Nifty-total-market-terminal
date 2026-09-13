@@ -222,7 +222,10 @@ def _ai_compact_context(context):
         "RSI14", "EMA9", "EMA21", "SMA20", "SMA50", "SMA200", "EMA255",
         "RS3MPct", "RS6MPct", "VolumeRatio", "Volume", "AvgVolume",
         "AvgTradedValue20", "LiquidityBucket", "ATRPercent",
-        "DataQualityStatus", "Fundamental Coverage",
+                "DataQualityStatus", "Fundamental Coverage",
+        "Stage", "Caution Stage", "Suppressed By Stage",
+        "Pattern", "Entry_Quality", "RS_Rating", "Mansfield_RS",
+
         "BullMomentum", "BullSwing", "Breakout20", "VolumeConfirmedMomentum",
     ]
     lower_lookup = {str(k).lower(): k for k in snapshot.keys()}
@@ -715,6 +718,11 @@ Answer for a reasonably informed retail investor:
 - Prefer plain English.
 - Explain jargon briefly when useful.
 - Do not dump every available metric.
+
+  You must NEVER calculate candle geometry, pattern classification, or RS/Stage math yourself. 
+  The deterministic engine passes the resolved vectors (like Stage, Pattern, Entry Quality, RS Rating) to you. 
+  Your job is purely to translate these vectors into retail-friendly language.
+
 - Use short sections and bullets only when they improve clarity.
 - Do not invent news, events, targets, support levels, or financial figures not present in the data.
 - Do not guarantee returns or give personalised financial advice.

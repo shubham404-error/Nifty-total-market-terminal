@@ -9,6 +9,8 @@ from datetime import date, timedelta
 from typing import Callable
 import re
 import pandas as pd
+from stage_rs import calculate_stage, calculate_mansfield_rs, calculate_rs_rating
+from price_action import detect_patterns, calculate_entry_quality
 import requests
 import yfinance as yf
 import streamlit as st
@@ -554,12 +556,37 @@ def calculate_indicators(
             & (frame["VolumeRatio"] >= 1.5)
         )
 
+
         previous_20_high = high.rolling(20, min_periods=20).max().shift(1)
         frame["Breakout20"] = (
             (close > previous_20_high)
             & (frame["VolumeRatio"] >= 1.5)
             & frame["BullSwing"]
         )
+
+        # ---- FILTER 1: STAGE & RS ----
+        stage_df = calculate_stage(close)
+        frame["Stage"] = stage_df["stage"]
+        
+        if nifty_close is not None:
+            nifty_aligned = nifty_close.reindex(frame["Date"])
+            frame["Mansfield_RS"] = calculate_mansfield_rs(close, nifty_aligned.values)
+        
+        # RS Rating computation
+        # (cross-sectional scaling will happen in latest_snapshot)
+        def get_return(series, periods):
+            return (series / series.shift(periods)) - 1
+        r63 = get_return(close, 63)
+        r126 = get_return(close, 126)
+        r189 = get_return(close, 189)
+        r252 = get_return(close, 252)
+        frame["Raw_RS_Rating"] = 0.40 * r63 + 0.20 * r126 + 0.20 * r189 + 0.20 * r252
+        frame["Has_252d_History"] = ~close.shift(252).isna()
+
+        # ---- FILTER 2: CANDLESTICK ENTRY SETUP ENGINE ----
+        frame["Pattern"] = detect_patterns(frame)
+        frame["Entry_Quality"] = calculate_entry_quality(frame, frame["Pattern"])
+
 
         frame["Yahoo Symbol"] = ticker
         result_frames.append(frame)
@@ -584,7 +611,11 @@ def latest_snapshot(
         "BullMomentum", "BullSwing", "BullRegime", "MomentumFresh",
         "SwingFresh", "RegimeFresh", "Pullback", "ATR14", "ATRPercent",
         "VolumeSMA20", "VolumeRatio", "AvgTradedValue20", "DailyReturnPct",
+        
         "GapPct", "VolumeConfirmedMomentum", "Breakout20",
+        "Stage", "Mansfield_RS", "Raw_RS_Rating", "Has_252d_History", 
+        "Pattern", "Entry_Quality",
+
     ] + [f"Return{label}" for label in RS_PERIODS] + [f"RS_Nifty_{label}" for label in RS_PERIODS]
 
     for ticker, frame in indicators.groupby("Yahoo Symbol", sort=False):
@@ -1056,3 +1087,5 @@ def fundamental_snapshot(ticker: str) -> dict:
         }
     except Exception:
         return defaults
+from stage_rs import calculate_stage, calculate_mansfield_rs
+from price_action import detect_patterns, calculate_entry_quality, compute_geometry

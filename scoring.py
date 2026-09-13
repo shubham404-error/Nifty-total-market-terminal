@@ -74,11 +74,32 @@ def build_final_buy_list(
             + (2 if pd.notna(pe) and 0 < pe <= 60 else 0)
         )
         conviction = float(row["InvestorTechnicalScore"]) * 0.90 + fundamental_score
+
+        confluence_score = int(pd.to_numeric(row.get("ConvergenceScore"), errors="coerce"))
+        stage = row.get("Stage", 0)
+        
+        from constants import STAGE_3_PENALTY_MULTIPLIER
+        
+        caution_stage = stage == 3
+        suppressed_by_stage = stage == 4
+        
+        gated_confluence_score = confluence_score
+        if caution_stage:
+            gated_confluence_score = confluence_score * STAGE_3_PENALTY_MULTIPLIER
+            
         rows.append({
             "Symbol": row.get("Symbol"), "Company": row.get("Company"), "Setup": row.get("Setup"),
             "Investor Conviction": round(conviction, 1),
             "Technical Quality": round(float(row["InvestorTechnicalScore"]), 1),
-            "Confluence": int(pd.to_numeric(row.get("ConvergenceScore"), errors="coerce")),
+            "Confluence": confluence_score,
+            "Gated Confluence": round(gated_confluence_score, 1),
+            "Stage": stage,
+            "Caution Stage": caution_stage,
+            "Suppressed By Stage": suppressed_by_stage,
+            "Pattern": row.get("Pattern"),
+            "Entry Quality": round(float(row.get("Entry_Quality", 0)), 1) if pd.notna(row.get("Entry_Quality")) else None,
+            "RS Rating": round(float(row.get("RS_Rating", 0)), 1) if pd.notna(row.get("RS_Rating")) else None,
+
             "RS 3M %ile": round(float(row["RS3MPct"]), 1) if pd.notna(row.get("RS3MPct")) else None,
             "RS 6M %ile": round(float(row["RS6MPct"]), 1) if pd.notna(row.get("RS6MPct")) else None,
             "Volume x": round(float(row["VolumeRatio"]), 2) if pd.notna(row.get("VolumeRatio")) else None,
