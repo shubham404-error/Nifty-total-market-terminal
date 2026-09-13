@@ -86,6 +86,10 @@ def build_final_buy_list(
         gated_confluence_score = confluence_score
         if caution_stage:
             gated_confluence_score = confluence_score * STAGE_3_PENALTY_MULTIPLIER
+            conviction *= STAGE_3_PENALTY_MULTIPLIER
+            
+        if suppressed_by_stage:
+            continue
             
         rows.append({
             "Symbol": row.get("Symbol"), "Company": row.get("Company"), "Setup": row.get("Setup"),
@@ -118,7 +122,7 @@ def build_final_buy_list(
     for col in ["Investor Conviction", "Technical Quality"]:
         final[col] = pd.to_numeric(final[col], errors="coerce")
     final = final.loc[final["Investor Conviction"] >= float(min_score)].sort_values(
-        ["Investor Conviction", "Technical Quality", "RS 3M %ile"], ascending=False, na_position="last"
+        ["Investor Conviction", "Entry Quality", "Technical Quality", "RS 3M %ile"], ascending=False, na_position="last"
     ).reset_index(drop=True)
     if not final.empty:
         final.insert(0, "Rank", range(1, len(final) + 1))
