@@ -86,8 +86,17 @@ def calculate_entry_quality(df: pd.DataFrame, pattern_series: pd.Series) -> pd.S
     geom_score[pattern_series.isin(["Hammer", "Inside Bar Breakout", "Inverted Hammer"])] = 15
     geom_score[pattern_series.isin(["Harami"])] = 10
     
-    # Location (20%): Simplified proximity score based on close_loc
-    loc_score = ((df['close_loc'] + 1) / 2) * 20
+    # Location (20%): Proximity to structural support levels
+    ema21 = df['Close'].ewm(span=21).mean()
+    sma50 = df['Close'].rolling(50).mean()
+    sma200 = df['Close'].rolling(200).mean()
+    
+    dist_21 = ((df['Close'] - ema21) / df['Close']).abs()
+    dist_50 = ((df['Close'] - sma50) / df['Close']).abs()
+    dist_200 = ((df['Close'] - sma200) / df['Close']).abs()
+    
+    nearest_support_dist = pd.concat([dist_21, dist_50, dist_200], axis=1).min(axis=1)
+    loc_score = (1 - (nearest_support_dist / 0.05).clip(0, 1)) * 20
     
     # Trend Alignment (15%):
     sma50 = df['Close'].rolling(50).mean()
@@ -101,13 +110,21 @@ def calculate_entry_quality(df: pd.DataFrame, pattern_series: pd.Series) -> pd.S
     mom_score = np.where(df['Close'] > df['Close'].shift(5), 10, 0)
     
     # Relative Strength (5%):
-    rs_score = 5 # Placeholder, assumes cross-sectionalRS
+    if 'RS_Rating' in df.columns:
+        rs_score = (df['RS_Rating'].fillna(50) / 100 * 5).clip(0, 5)
+    else:
+        ret5 = df['Close'].pct_change(5)
+        rs_score = np.where(ret5 > 0.02, 5, np.where(ret5 > 0, 3, 0))
     
     # Volatility (5%):
     volatility_score = np.where(df['range_atr_ratio'] > 1.0, 5, 0)
     
     # Confirmation (5%):
-    conf_score = 5 # Forward looking in real test
+    next_close = df['Close'].shift(-1)
+    pattern_high = df['High']
+    conf_score = np.where(next_close > pattern_high, 5, 0)
+    if len(conf_score) > 0:
+        conf_score[-1] = 0
     
     # Liquidity (5%):
     liq_score = np.where(df['Volume'] * df['Close'] > 10000000, 5, 0) # 1Cr turnover

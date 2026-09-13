@@ -7,7 +7,7 @@ def calculate_mansfield_rs(stock_close: pd.Series, bench_close: pd.Series) -> pd
     mrs = ((rp / sma200) - 1) * 100
     return mrs
 
-def calculate_rs_rating(stock_close: pd.Series, universe_data: dict, current_date) -> dict:
+def calculate_rs_rating(stock_close: pd.Series) -> dict:
     # Requires stock_close to have 252 days of history
     if len(stock_close) < 252:
         return {"rs_rating": None, "insufficient_data": True}

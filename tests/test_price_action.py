@@ -84,11 +84,21 @@ def test_no_lookahead_bias():
     df1 = pd.DataFrame({"Open": [105, 94], "High": [106, 110], "Low": [94, 90], "Close": [95, 108], "Volume":[1000, 2000]})
     df1 = pad_df(df1)
     
-    # Add a future candle
     df2 = pd.concat([df1, pd.DataFrame({"Open": [108], "High": [112], "Low": [105], "Close": [110], "Volume":[1000]})], ignore_index=True)
     
     pat1 = detect_patterns(df1)
     pat2 = detect_patterns(df2)
     
-    # The pattern assigned to the engulfing candle should be identical whether we know the future or not
     assert pat1.iloc[-1] == pat2.iloc[-2]
+
+def test_entry_quality_variance():
+    df = pd.DataFrame({
+        "Open":  np.random.uniform(90, 110, 100),
+        "High":  np.random.uniform(110, 120, 100),
+        "Low":   np.random.uniform(80, 90, 100),
+        "Close": np.random.uniform(90, 110, 100),
+        "Volume":np.random.uniform(1000, 5000, 100)
+    })
+    patterns = detect_patterns(df)
+    quality = calculate_entry_quality(df, patterns)
+    assert quality.var() > 0

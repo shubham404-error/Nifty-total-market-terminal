@@ -4,7 +4,9 @@ import streamlit as st
 from engine import fundamental_snapshot, investor_quality_gate
 from ui.components import get_convergence, get_snapshot
 
-from constants import AI_STRATEGY_PREFILTER_SCORE, AI_DEFAULT_FINAL_BUY_CONVICTION, AI_DEFAULT_FINAL_BUY_LIQUIDITY, AI_FUNDAMENTAL_FETCH_LIMIT
+from constants import (AI_STRATEGY_PREFILTER_SCORE, AI_DEFAULT_FINAL_BUY_CONVICTION,
+                       AI_DEFAULT_FINAL_BUY_LIQUIDITY, AI_FUNDAMENTAL_FETCH_LIMIT,
+                       STAGE_3_PENALTY_MULTIPLIER, FILTERS_SHADOW_MODE)
 
 
 def _fundamental_for_scan(namespace, yahoo_symbol):
@@ -78,18 +80,19 @@ def build_final_buy_list(
         confluence_score = int(pd.to_numeric(row.get("ConvergenceScore"), errors="coerce"))
         stage = row.get("Stage", 0)
         
-        from constants import STAGE_3_PENALTY_MULTIPLIER
+        
         
         caution_stage = stage == 3
         suppressed_by_stage = stage == 4
         
         gated_confluence_score = confluence_score
-        if caution_stage:
-            gated_confluence_score = confluence_score * STAGE_3_PENALTY_MULTIPLIER
-            conviction *= STAGE_3_PENALTY_MULTIPLIER
-            
-        if suppressed_by_stage:
-            continue
+        if not FILTERS_SHADOW_MODE:
+            if caution_stage:
+                gated_confluence_score = confluence_score * STAGE_3_PENALTY_MULTIPLIER
+                conviction *= STAGE_3_PENALTY_MULTIPLIER
+                
+            if suppressed_by_stage:
+                continue
             
         rows.append({
             "Symbol": row.get("Symbol"), "Company": row.get("Company"), "Setup": row.get("Setup"),
