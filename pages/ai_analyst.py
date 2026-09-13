@@ -5,6 +5,7 @@ from ui.components import get_snapshot, get_convergence, terminal_header, page_i
 from ui.charts import market_chart
 from state import _invalidate_strategy_state, _ensure_ai_strategy_outputs, _ai_register_strategy_output, _strategy_cache_valid, _current_scan_id
 from scoring import build_ai_confluence_pool, build_final_buy_list, _build_emerging_scored, build_emerging_buy_list
+from constants import AI_STRATEGY_PREFILTER_SCORE, AI_FUNDAMENTAL_FETCH_LIMIT, AI_SESSION_CALL_LIMIT, AI_DEFAULT_FINAL_BUY_CONVICTION, AI_DEFAULT_FINAL_BUY_LIQUIDITY
 from ai_service import _render_list_ai_terminal, _gemini_reply, _ai_consume_call
 
 def nifty_ai_page():

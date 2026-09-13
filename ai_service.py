@@ -9,9 +9,7 @@ from state import _ai_registered_strategy_frame
 from ui.charts import _ai_chart_png
 
 GEMINI_MODEL = 'gemini-3.5-flash-lite'
-AI_SESSION_CALL_LIMIT = 25
-AI_FUNDAMENTAL_FETCH_LIMIT = 25
-AI_LIST_REVIEW_LIMIT = 20
+from constants import AI_SESSION_CALL_LIMIT, AI_FUNDAMENTAL_FETCH_LIMIT, AI_LIST_REVIEW_LIMIT
 AI_ACTIONS = ('STRONG BUY', 'BUY', 'ACCUMULATE', 'HOLD / MONITOR', 'WAIT FOR PULLBACK', 'WAIT FOR BREAKOUT', 'AVOID FOR NOW', 'SELL / EXIT')
 
 def _ai_json_value(value):
