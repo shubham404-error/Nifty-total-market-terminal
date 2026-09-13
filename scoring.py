@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import streamlit as st
-from engine import fundamental_snapshot
+from engine import fundamental_snapshot, investor_quality_gate
 from ui.components import get_convergence, get_snapshot
 
 from constants import AI_STRATEGY_PREFILTER_SCORE, AI_DEFAULT_FINAL_BUY_CONVICTION, AI_DEFAULT_FINAL_BUY_LIQUIDITY, AI_FUNDAMENTAL_FETCH_LIMIT

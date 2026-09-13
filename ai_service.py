@@ -5,6 +5,11 @@ import re
 from google import genai
 from google.genai import types
 from engine import fundamental_snapshot
+import datetime
+import yfinance as yf
+from state import _ensure_ai_strategy_outputs, _current_scan_id
+from ui.components import get_snapshot, _ai_avatar_source
+from constants import AI_LIST_TOP_N
 from state import _ai_registered_strategy_frame
 from ui.charts import _ai_chart_png
 

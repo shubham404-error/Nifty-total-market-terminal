@@ -6,9 +6,12 @@ from ui.charts import market_chart
 from state import _invalidate_strategy_state, _ensure_ai_strategy_outputs, _ai_register_strategy_output, _strategy_cache_valid, _current_scan_id
 from scoring import build_ai_confluence_pool, build_final_buy_list, _build_emerging_scored, build_emerging_buy_list
 from constants import AI_STRATEGY_PREFILTER_SCORE, AI_FUNDAMENTAL_FETCH_LIMIT, AI_SESSION_CALL_LIMIT, AI_DEFAULT_FINAL_BUY_CONVICTION, AI_DEFAULT_FINAL_BUY_LIQUIDITY
+from ui.components import render_trendlyne_widgets, _ai_avatar_source
+from ai_service import _ai_stock_context, _split_ai_action, _render_ai_action, GEMINI_MODEL
 from ai_service import _render_list_ai_terminal, _gemini_reply, _ai_consume_call
 
 def nifty_ai_page():
+    IS_BETA = st.query_params.get("beta") == "true"
     require_scan()
     terminal_header(
         "Nifty AI Analyst",

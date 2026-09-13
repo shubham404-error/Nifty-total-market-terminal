@@ -197,6 +197,7 @@ def render_terminal_footer():
 
 def render_trendlyne_widgets(symbol: str):
     import streamlit.components.v1 as components
+from constants import AI_STRATEGY_PREFILTER_SCORE
     tl_sym = symbol.replace(".NS", "")
     st.subheader("Trendlyne Consensus")
     st.caption("Note: AI analysis is generated exclusively from CapitalSense proprietary data and cannot read external Trendlyne widgets.")
