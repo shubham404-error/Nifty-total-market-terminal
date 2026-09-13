@@ -387,7 +387,7 @@ def download_prices(
                 all_frames.append(one)
 
         if _progress_callback:
-            progress_callback(batch_no, total, len(failures))
+            _progress_callback(batch_no, total, len(failures))
 
         # Small pause helps avoid hammering the free public endpoint.
         time.sleep(0.15)
