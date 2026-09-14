@@ -5,6 +5,7 @@ from ui.components import get_snapshot, get_convergence, terminal_header, page_i
 from ui.charts import market_chart
 from state import _invalidate_strategy_state, _ensure_ai_strategy_outputs, _ai_register_strategy_output, _strategy_cache_valid, _current_scan_id
 from scoring import build_ai_confluence_pool, build_final_buy_list, _build_emerging_scored, build_emerging_buy_list
+from constants import FILTERS_SHADOW_MODE
 from constants import AI_STRATEGY_PREFILTER_SCORE, AI_FUNDAMENTAL_FETCH_LIMIT, AI_SESSION_CALL_LIMIT, AI_DEFAULT_FINAL_BUY_CONVICTION, AI_DEFAULT_FINAL_BUY_LIQUIDITY
 from ai_service import _render_list_ai_terminal, _gemini_reply, _ai_consume_call
 
@@ -35,6 +36,32 @@ def buying_list_page():
         ],
     )
 
+
+    # --- V4.1 Elimination Funnel ---
+    snapshot = get_snapshot().copy()
+    from scoring import compute_funnel_booleans
+    snapshot = compute_funnel_booleans(snapshot)
+    
+    universe_size = len(snapshot)
+    q_pass = snapshot["passed_data_quality"].sum()
+    l_pass = snapshot["passed_data_quality"] & snapshot["passed_liquidity"]
+    s_pass = l_pass & snapshot["passed_stage"]
+    lead_pass = s_pass & snapshot["passed_leadership"]
+    conf_pass = lead_pass & snapshot["passed_confluence"]
+    entry_pass = conf_pass & snapshot["passed_entry"]
+    
+    st.markdown("### Decision Engine V4.1 Funnel")
+    if FILTERS_SHADOW_MODE:
+        st.warning("⚠️ **SHADOW MODE ACTIVE:** Funnel calculations are displayed but do not filter the Buy List.")
+        
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("1. Data Quality", f"{q_pass.sum():,}")
+    c2.metric("2. Liquidity", f"{l_pass.sum():,}")
+    c3.metric("3. Stage (1/2)", f"{s_pass.sum():,}")
+    c4.metric("4. Leadership", f"{lead_pass.sum():,}")
+    c5.metric("5. Confluence", f"{conf_pass.sum():,}")
+    c6.metric("6. Entry Setup", f"{entry_pass.sum():,}")
+    st.divider()
     min_score = st.slider(
         "Minimum Investor Conviction Score",
         65,

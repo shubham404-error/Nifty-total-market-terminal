@@ -493,6 +493,11 @@ def calculate_indicators(
         frame["SMA20"] = close.rolling(20, min_periods=20).mean()
         frame["SMA50"] = close.rolling(50, min_periods=50).mean()
         frame["SMA200"] = close.rolling(200, min_periods=200).mean()
+        
+        # V4.1: 20-day slope of the 50 SMA for EntrySetupQualified
+        sma50 = frame["SMA50"]
+        sma50_20d_ago = sma50.shift(20)
+        frame["SMA50Slope20"] = (sma50 - sma50_20d_ago) / sma50_20d_ago
         frame[f"EMA{ema_long}"] = close.ewm(
             span=ema_long, adjust=False, min_periods=ema_long
         ).mean()
@@ -581,11 +586,16 @@ def calculate_indicators(
         r189 = get_return(close, 189)
         r252 = get_return(close, 252)
         frame["Raw_RS_Rating"] = 0.40 * r63 + 0.20 * r126 + 0.20 * r189 + 0.20 * r252
-        frame["Has_252d_History"] = ~close.shift(252).isna()
+        frame["HistoryEligible"] = ~close.shift(252).isna()
 
         # ---- FILTER 2: CANDLESTICK ENTRY SETUP ENGINE ----
-        frame["Pattern"] = detect_patterns(frame)
+        frame["Pattern"], frame["EntryPattern"] = detect_patterns(frame)
         frame["Entry_Quality"] = calculate_entry_quality(frame, frame["Pattern"])
+        
+        trend_aligned = frame["Stage"].isin([1, 2]) & (frame["SMA50Slope20"] >= 0.00) & (frame["Close"] >= 0.98 * frame["SMA50"])
+        location_valid = ((frame["Close"] - frame["SMA50"]) / frame["SMA50"]).abs() <= 0.03
+        volume_confirmed = frame["VolumeRatio"] >= 1.20
+        frame["EntrySetupQualified"] = trend_aligned & location_valid & volume_confirmed
 
 
         frame["Yahoo Symbol"] = ticker
@@ -606,15 +616,15 @@ def latest_snapshot(
     meta = universe.set_index("Yahoo Symbol")[["Symbol", "Company"]].to_dict("index")
     rows = []
     latest_columns = [
-        "Close", "EMA9", "EMA21", "SMA20", "SMA50", "SMA200",
+        "Close", "EMA9", "EMA21", "SMA20", "SMA50", "SMA200", "SMA50Slope20",
         f"EMA{ema_long}", f"RSI{rsi_period}", "EMA255DistancePct",
         "BullMomentum", "BullSwing", "BullRegime", "MomentumFresh",
         "SwingFresh", "RegimeFresh", "Pullback", "ATR14", "ATRPercent",
         "VolumeSMA20", "VolumeRatio", "AvgTradedValue20", "DailyReturnPct",
         
         "GapPct", "VolumeConfirmedMomentum", "Breakout20",
-        "Stage", "Mansfield_RS", "Raw_RS_Rating", "Has_252d_History", 
-        "Pattern", "Entry_Quality",
+        "Stage", "Mansfield_RS", "Raw_RS_Rating", "HistoryEligible", 
+        "Pattern", "EntryPattern", "Entry_Quality", "EntrySetupQualified",
 
     ] + [f"Return{label}" for label in RS_PERIODS] + [f"RS_Nifty_{label}" for label in RS_PERIODS]
 

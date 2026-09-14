@@ -4,6 +4,9 @@ import streamlit as st
 from engine import fundamental_snapshot, investor_quality_gate
 from ui.components import get_convergence, get_snapshot
 
+from decision_config import V4_CONFIG
+from market_regime import update_market_regime
+import datetime
 from constants import (AI_STRATEGY_PREFILTER_SCORE, AI_DEFAULT_FINAL_BUY_CONVICTION,
                        AI_DEFAULT_FINAL_BUY_LIQUIDITY, AI_FUNDAMENTAL_FETCH_LIMIT,
                        STAGE_3_PENALTY_MULTIPLIER, FILTERS_SHADOW_MODE)
@@ -37,6 +40,59 @@ def build_ai_confluence_pool(convergence=None, min_score=AI_STRATEGY_PREFILTER_S
     ].copy().reset_index(drop=True)
 
 
+def compute_funnel_booleans(snapshot: pd.DataFrame) -> pd.DataFrame:
+    if snapshot.empty:
+        return snapshot
+        
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    index_stage = 2 # Dummy value if we don't have Nifty50. Ideally fetch from actual Nifty50 stage
+    # For now, just use 2.
+    
+    # Check if Nifty 50 exists in snapshot to get actual stage
+    nifty_row = snapshot[snapshot["Symbol"] == "^NSEI"]
+    if not nifty_row.empty:
+        index_stage = int(nifty_row["Stage"].iloc[0])
+        
+    regime_info = update_market_regime(date_str, snapshot, index_stage)
+    regime = regime_info["Regime"]
+    
+    current_regime_threshold = V4_CONFIG["CONFLUENCE_STANDARD"]
+    if regime == "DEFENSIVE":
+        current_regime_threshold = V4_CONFIG["CONFLUENCE_DEFENSIVE"]
+        
+    snapshot["passed_data_quality"] = snapshot["HistoryEligible"].fillna(False).astype(bool)
+    
+    # 2. LIQUIDITY (Hard Gate)
+    snapshot["passed_liquidity"] = pd.to_numeric(snapshot.get("AvgTradedValue20", 0), errors="coerce") >= 1_00_00_000
+    
+    # 3. STAGE (Hard Gate)
+    snapshot["passed_stage"] = snapshot.get("Stage", -1).isin([1, 2])
+    
+    # 4. LEADERSHIP (Hard Gate)
+    snapshot["passed_leadership"] = pd.to_numeric(snapshot.get("Raw_RS_Rating", 0), errors="coerce") >= V4_CONFIG["RS_RATING_MIN"]
+    
+    # 5. CONFLUENCE (Hard Gate)
+    snapshot["passed_confluence"] = pd.to_numeric(snapshot.get("ConvergenceScore", 0), errors="coerce") >= current_regime_threshold
+    
+    # 6. ENTRY SETUP (Hard Gate)
+    valid_patterns = V4_CONFIG["VALID_ENTRY_PATTERNS"]
+    snapshot["passed_entry"] = snapshot.get("EntryPattern", "").isin(valid_patterns) & snapshot.get("EntrySetupQualified", False).astype(bool)
+    
+    # Overall funnel pass
+    snapshot["passed_all"] = (
+        snapshot["passed_data_quality"] & 
+        snapshot["passed_liquidity"] & 
+        snapshot["passed_stage"] & 
+        snapshot["passed_leadership"] & 
+        snapshot["passed_confluence"] & 
+        snapshot["passed_entry"]
+    )
+    
+    if regime == "CRISIS":
+        snapshot["passed_all"] = False
+        
+    return snapshot
+
 def build_final_buy_list(
     convergence=None,
     min_score=AI_DEFAULT_FINAL_BUY_CONVICTION,
@@ -50,6 +106,10 @@ def build_final_buy_list(
         return pd.DataFrame()
 
     source = convergence.copy()
+    source = compute_funnel_booleans(source)
+    if not FILTERS_SHADOW_MODE:
+        source = source[source["passed_all"]].copy()
+        
     if prefilter_score is not None:
         source = build_ai_confluence_pool(source, min_score=prefilter_score)
 

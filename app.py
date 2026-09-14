@@ -11,6 +11,8 @@ from pages.strategies import regime_page, momentum_page, swing_page, pullback_pa
 from pages.ai_analyst import nifty_ai_page
 from pages.confluence import convergence_page
 from pages.buying_list import buying_list_page
+from pages.market_health import market_health_page
+from pages.positions_at_risk import positions_at_risk_page
 
 # Paths for setup
 APP_FAVICON_PATH = Path("assets/nifty_favicon.png")

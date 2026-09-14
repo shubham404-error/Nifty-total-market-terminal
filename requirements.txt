@@ -6,3 +6,5 @@ plotly>=6.1,<7
 google-genai
 matplotlib
 pyarrow
+
+exchange_calendars

@@ -37,10 +37,31 @@ def detect_patterns(df: pd.DataFrame) -> pd.Series:
     body1 = (C1 - O1).abs()
     
     # 1. Hammer: Reversal. Lower wick >> body. close_loc > 0.5
-    is_hammer = (df['close_loc'] > 0.5) & (body < (df['Open'] - df['Low']).abs() * 0.5) & (df['range_atr_ratio'] > 0.8)
+    EPS = 1e-8
+    candle_range = df['High'] - df['Low']
+    lower_wick = df[['Open', 'Close']].min(axis=1) - df['Low']
+    upper_wick = df['High'] - df[['Open', 'Close']].max(axis=1)
+    
+    is_hammer = (
+        (candle_range > 0)
+        & (body / candle_range <= 0.35)
+        & (lower_wick >= 2.0 * np.maximum(body, EPS))
+        & (upper_wick <= 0.50 * np.maximum(body, EPS))
+        & (df['Close'] >= df['Low'] + 0.60 * candle_range)
+    )
     
     # 2. Bullish Engulfing: C > O1, O < C1, C1 < O1
-    is_bull_engulf = (C1 < O1) & (df['Close'] > O1) & (df['Open'] < C1) & (df['range_atr_ratio'] > 1.0)
+    prev_bearish = C1 < O1
+    current_bullish = df['Close'] > df['Open']
+    real_body_engulfs = (df['Open'] <= C1) & (df['Close'] >= O1)
+    body_strength = body >= 1.00 * (C1 - O1).abs()
+    
+    is_bull_engulf = (
+        prev_bearish
+        & current_bullish
+        & real_body_engulfs
+        & body_strength
+    )
     
     # 3. Harami: Inside bar
     is_harami = (df['High'] < H1) & (df['Low'] > L1) & (df['range_atr_ratio'] < 0.8)
@@ -75,7 +96,8 @@ def detect_patterns(df: pd.DataFrame) -> pd.Series:
     patterns = np.where(is_bear_engulf, "Bearish Engulfing", patterns)
     patterns = np.where(is_shooting_star, "Shooting Star", patterns)
     
-    return pd.Series(patterns, index=df.index)
+    entry_patterns = np.where(is_hammer, "Hammer", np.where(is_bull_engulf, "Bullish Engulfing", None))
+    return pd.Series(patterns, index=df.index), pd.Series(entry_patterns, index=df.index)
 
 def calculate_entry_quality(df: pd.DataFrame, pattern_series: pd.Series) -> pd.Series:
     score = pd.Series(0.0, index=df.index)
