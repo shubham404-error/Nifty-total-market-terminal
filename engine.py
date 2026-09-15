@@ -340,8 +340,12 @@ def download_prices(
     years: int = 4,
     batch_size: int = 75,
     _progress_callback: Callable[[int, int, int], None] | None = None,
+    as_of_session: str = None,
 ) -> tuple[pd.DataFrame, list[str]]:
-    end = date.today() + timedelta(days=1)
+    if as_of_session:
+        end = pd.to_datetime(as_of_session).date() + timedelta(days=1)
+    else:
+        end = date.today() + timedelta(days=1)
     start = end - timedelta(days=int(years * 365.25))
 
     tickers = universe["Yahoo Symbol"].tolist()

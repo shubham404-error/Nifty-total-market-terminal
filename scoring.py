@@ -40,11 +40,14 @@ def build_ai_confluence_pool(convergence=None, min_score=AI_STRATEGY_PREFILTER_S
     ].copy().reset_index(drop=True)
 
 
-def compute_funnel_booleans(snapshot: pd.DataFrame) -> pd.DataFrame:
+def compute_funnel_booleans(snapshot: pd.DataFrame, as_of_session: str = None) -> pd.DataFrame:
     if snapshot.empty:
         return snapshot
         
-    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    if not as_of_session:
+        import datetime
+        as_of_session = datetime.datetime.now().strftime("%Y-%m-%d")
+    date_str = as_of_session
     index_stage = 2 # Dummy value if we don't have Nifty50. Ideally fetch from actual Nifty50 stage
     # For now, just use 2.
     
@@ -98,6 +101,7 @@ def build_final_buy_list(
     min_score=AI_DEFAULT_FINAL_BUY_CONVICTION,
     use_liquidity=AI_DEFAULT_FINAL_BUY_LIQUIDITY,
     prefilter_score=None,
+    as_of_session: str = None,
 ):
     """Shared Final Buy List engine used by both the page and AI verification."""
     if convergence is None:
@@ -193,7 +197,7 @@ def build_final_buy_list(
         try:
             from signal_ledger import add_signal
             import datetime
-            signal_date = str(datetime.date.today())
+            signal_date = as_of_session if as_of_session else str(datetime.date.today())
             nifty_rows = source[source["Symbol"].isin(["^NSEI", "NIFTY 50", "Nifty 50"])]
             nifty_current = float(nifty_rows["Close"].values[0]) if not nifty_rows.empty else None
             

@@ -10,3 +10,8 @@ def test_valid_trading_session():
     
 def test_next_valid_session():
     assert next_valid_session("2026-09-05").strftime("%Y-%m-%d") == "2026-09-07"
+from trading_calendar import get_previous_sessions
+def test_get_previous_sessions():
+    # Sep 16, 2026 is Wed. T-5 should be Sep 8 (Tue)
+    t_5 = get_previous_sessions('2026-09-16', 5)
+    assert t_5.strftime('%Y-%m-%d') == '2026-09-08'

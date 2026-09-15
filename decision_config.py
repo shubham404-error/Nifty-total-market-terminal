@@ -1,4 +1,4 @@
-﻿# decision_config.py
+# decision_config.py
 
 V4_CONFIG = {
     "CONFIG_VERSION": "DecisionEngine_v4.1",
@@ -42,6 +42,19 @@ V4_CONFIG = {
     # Decay
     "RS_DECAY_THRESHOLD": 15,   # RS drop of 15+ points triggers LEADERSHIP group
     "MOMENTUM_FLOOR_LOOKBACK": 20,
+
+    # Added from V5 Handover requirements
+    "LIQUIDITY_THRESHOLD": 10000000,          # 1 Crore
+    "RS_THRESHOLD": 70,                       # Stage 2 momentum criteria
+    "LOCATION_THRESHOLD": 0.03,               # EMA/SMA pullback proximity
+    "REGIME_THRESHOLDS": {
+        "CRISIS": 0.15,
+        "DEFENSIVE": 0.35,
+        "BULLISH": 0.60
+    },
+    "HORIZON_DAYS_SHORT": 1,
+    "HORIZON_DAYS_MED": 3,
+    "HORIZON_DAYS_LONG": 5,
 
     # EPS guard for candle geometry division
     "CANDLE_EPS": 1e-8,
