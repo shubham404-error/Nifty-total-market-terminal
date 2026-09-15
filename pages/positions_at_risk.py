@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import sqlite3
 import pandas as pd
 import json
@@ -35,12 +35,32 @@ def positions_at_risk_page():
                 try: decay_reasons = json.loads(row["DecayReasons"])
                 except: pass
                 
+            original_thesis = {}
+            if row.get("OriginalThesis"):
+                try: original_thesis = json.loads(row["OriginalThesis"])
+                except Exception: pass
+            
+            nifty_at_entry = original_thesis.get("NiftyAtEntry")
+            nifty_rows = snapshot[snapshot["Symbol"].isin(["^NSEI", "NIFTY 50", "Nifty 50"])]
+            nifty_current = float(nifty_rows["Close"].values[0]) if not nifty_rows.empty else None
+            
+            if nifty_at_entry and nifty_current and nifty_at_entry > 0:
+                nifty_ret = (nifty_current - nifty_at_entry) / nifty_at_entry
+                rel_ret = ret - nifty_ret
+                rel_ret_display = f"{rel_ret:.2%}"
+                nifty_ret_display = f"{nifty_ret:.2%}"
+            else:
+                rel_ret_display = "N/A"
+                nifty_ret_display = "N/A"
+                
             parsed_data.append({
                 "Symbol": sym,
                 "EntryDate": row["EntryDate"],
                 "EntryPrice": entry_price,
                 "CurrentPrice": curr_price,
                 "Return": f"{ret:.2%}",
+                "Nifty Return": nifty_ret_display,
+                "Rel Return vs Nifty": rel_ret_display,
                 "DecayState": row["DecayState"],
                 "DecayReasons": ", ".join(decay_reasons) if decay_reasons else "None"
             })

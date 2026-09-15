@@ -189,6 +189,41 @@ def build_final_buy_list(
     ).reset_index(drop=True)
     if not final.empty:
         final.insert(0, "Rank", range(1, len(final) + 1))
+        
+        try:
+            from signal_ledger import add_signal
+            import datetime
+            signal_date = str(datetime.date.today())
+            nifty_rows = source[source["Symbol"].isin(["^NSEI", "NIFTY 50", "Nifty 50"])]
+            nifty_current = float(nifty_rows["Close"].values[0]) if not nifty_rows.empty else None
+            
+            for _, r in final.iterrows():
+                # Get the actual source row
+                s_row = source[source["Symbol"] == r["Symbol"]]
+                if s_row.empty: continue
+                s_row = s_row.iloc[0]
+                
+                original_thesis = {
+                    "Stage": int(s_row.get("Stage", 0)) if pd.notna(s_row.get("Stage")) else 0,
+                    "RS_Rating": float(s_row.get("RS_Rating", 0)) if pd.notna(s_row.get("RS_Rating")) else None,
+                    "Confluence": float(s_row.get("ConvergenceScore", 0)) if pd.notna(s_row.get("ConvergenceScore")) else None,
+                    "EntryPattern": s_row.get("EntryPattern"),
+                    "VolumeRatio": float(s_row.get("VolumeRatio", 0)) if pd.notna(s_row.get("VolumeRatio")) else None
+                }
+                
+                add_signal(
+                    symbol=r["Symbol"],
+                    signal_date=signal_date,
+                    entry_date=None,
+                    entry_price=None,
+                    signal_close=float(s_row.get("Close", 0)) if pd.notna(s_row.get("Close")) else 0.0,
+                    original_thesis=original_thesis,
+                    nifty_at_entry=nifty_current
+                )
+        except Exception as e:
+            import logging
+            logging.error(f"Error saving signals to ledger: {e}")
+            
     return final
 
 

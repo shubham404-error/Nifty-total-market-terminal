@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 import json
 import os
 import pandas as pd
@@ -32,9 +32,12 @@ def generate_signal_id(symbol: str, signal_date: str) -> str:
     # SignalID = Symbol_SignalDate_Strategy_ConfigVersion
     return f"{symbol}_{signal_date}_V4_{V4_CONFIG['CONFIG_VERSION']}"
 
-def add_signal(symbol: str, signal_date: str, entry_date: str, entry_price: float, signal_close: float, original_thesis: dict, data_status: str = "FRESH"):
+def add_signal(symbol: str, signal_date: str, entry_date: str, entry_price: float, signal_close: float, original_thesis: dict, nifty_at_entry: float = None, data_status: str = "FRESH"):
     init_ledger_db()
     signal_id = generate_signal_id(symbol, signal_date)
+    
+    if nifty_at_entry is not None:
+        original_thesis["NiftyAtEntry"] = nifty_at_entry
     
     with sqlite3.connect(DB_PATH) as conn:
         # Immutability guard: Check if exists

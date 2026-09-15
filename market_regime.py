@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sqlite3
 import pandas as pd
 from datetime import datetime
@@ -104,7 +104,6 @@ def update_market_regime(date_str: str, snapshot_df: pd.DataFrame, index_stage: 
     if len(df_hist) > 1 and "crisis_persistence" in df_hist.columns:
         prev_persistence = int(df_hist["crisis_persistence"].iloc[-2]) if not pd.isna(df_hist["crisis_persistence"].iloc[-2]) else 0
         prev_regime = str(df_hist["regime"].iloc[-2])
-        print(f"DEBUG: date={date_str}, iloc[-2]={df_hist.index[-2]}, prev_reg={prev_regime}, prev_pers={prev_persistence}")
     else:
         prev_persistence = 0
         prev_regime = "NEUTRAL"
