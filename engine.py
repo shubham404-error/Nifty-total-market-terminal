@@ -343,10 +343,10 @@ def download_prices(
     _progress_callback: Callable[[int, int, int], None] | None = None,
     as_of_session: str = None,
 ) -> tuple[pd.DataFrame, list[str]]:
-    if as_of_session:
-        from trading_calendar import next_valid_session; end = next_valid_session(as_of_session).date()
-    else:
-        from trading_calendar import next_valid_session; end = next_valid_session(date.today()).date()
+    if not as_of_session:
+        raise ValueError("as_of_session must be explicitly provided.")
+    from trading_calendar import next_valid_session
+    end = next_valid_session(as_of_session).date()
     start = end - timedelta(days=int(years * 365.25))
 
     tickers = universe["Yahoo Symbol"].tolist()

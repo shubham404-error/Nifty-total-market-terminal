@@ -2,7 +2,7 @@ import sqlite3
 import json
 import os
 import pandas as pd
-from datetime import datetime
+from trading_calendar import is_valid_session, next_valid_session, get_previous_sessions
 from decision_config import V4_CONFIG
 
 DB_PATH = "data/signal_ledger.sqlite"

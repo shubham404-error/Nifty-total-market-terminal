@@ -45,8 +45,7 @@ def compute_funnel_booleans(snapshot: pd.DataFrame, as_of_session: str = None) -
         return snapshot
         
     if not as_of_session:
-        import datetime
-        as_of_session = datetime.datetime.now().strftime("%Y-%m-%d")
+        raise ValueError("as_of_session must be explicitly provided.")
     date_str = as_of_session
     index_stage = 2 # Dummy value if we don't have Nifty50. Ideally fetch from actual Nifty50 stage
     # For now, just use 2.
@@ -66,7 +65,7 @@ def compute_funnel_booleans(snapshot: pd.DataFrame, as_of_session: str = None) -
     snapshot["passed_data_quality"] = snapshot["HistoryEligible"].fillna(False).astype(bool)
     
     # 2. LIQUIDITY (Hard Gate)
-    snapshot["passed_liquidity"] = pd.to_numeric(snapshot.get("AvgTradedValue20", 0), errors="coerce") >= 1_00_00_000
+    snapshot["passed_liquidity"] = pd.to_numeric(snapshot.get("AvgTradedValue20", 0), errors="coerce") >= V4_CONFIG["LIQUIDITY_THRESHOLD"]
     
     # 3. STAGE (Hard Gate)
     snapshot["passed_stage"] = snapshot.get("Stage", -1).isin([1, 2])
@@ -191,14 +190,16 @@ def build_final_buy_list(
     final = final.loc[final["Investor Conviction"] >= float(min_score)].sort_values(
         ["Investor Conviction", "Entry Quality", "Technical Quality", "RS 3M %ile"], ascending=False, na_position="last"
     ).reset_index(drop=True)
+    if not as_of_session:
+        raise ValueError("as_of_session must be explicitly provided.")
+        
     if not final.empty:
         final.insert(0, "Rank", range(1, len(final) + 1))
         
         try:
             from signal_ledger import add_signal
             from trading_calendar import next_valid_session
-            import datetime
-            signal_date = as_of_session if as_of_session else str(datetime.date.today())
+            signal_date = as_of_session
             nifty_rows = source[source["Symbol"].isin(["^NSEI", "NIFTY 50", "Nifty 50"])]
             nifty_current = float(nifty_rows["Close"].values[0]) if not nifty_rows.empty else None
             
@@ -298,7 +299,7 @@ def build_emerging_buy_list(working):
     buy=buy.loc[pd.to_numeric(buy["Fundamental Coverage"],errors="coerce")>=3].copy()
     buy=buy.loc[pd.to_numeric(buy["Fundamental Score"],errors="coerce")>=9].copy()
     traded=pd.to_numeric(buy["AvgTradedValue20"],errors="coerce") if "AvgTradedValue20" in buy.columns else pd.Series(0,index=buy.index)
-    buy=buy.loc[traded.fillna(0)>=1_00_00_000].copy()
+    buy=buy.loc[traded.fillna(0)>=V4_CONFIG["LIQUIDITY_THRESHOLD"]].copy()
     return buy.sort_values(["Emerging Score","Fundamental Score","Technical Score","RS3MPct"],ascending=False,na_position="last").reset_index(drop=True)
 
 

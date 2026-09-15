@@ -38,9 +38,13 @@ def scan_page():
     c_as_of, _ = st.columns([1, 3])
     with c_as_of:
         import datetime
-        from trading_calendar import get_previous_sessions
-        # Default to previous session if today is not a valid session or still open
-        as_of_date = st.date_input("As of session", value="today", max_value="today")
+        from trading_calendar import is_valid_session, get_previous_sessions
+        _today = datetime.date.today()
+        if is_valid_session(_today) and datetime.datetime.now().time() >= datetime.time(16, 0):
+            _default = _today
+        else:
+            _default = get_previous_sessions(_today, 1).date()
+        as_of_date = st.date_input("As of session", value=_default, max_value=_today)
 
     with c1:
         universe_name = st.selectbox(

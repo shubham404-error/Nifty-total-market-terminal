@@ -42,7 +42,7 @@ def evaluate_decay(current_snapshot_row: pd.Series, original_thesis_dict: dict, 
         groups.add("MOMENTUM")
         
     # 4. LIQUIDITY
-    if current_snapshot_row.get("AvgTradedValue20", 0) < 1_00_00_000:
+    if current_snapshot_row.get("AvgTradedValue20", 0) < V4_CONFIG["LIQUIDITY_THRESHOLD"]:
         reasons.append("Liquidity dropped below threshold")
         groups.add("LIQUIDITY")
         

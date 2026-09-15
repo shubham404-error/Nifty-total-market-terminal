@@ -27,7 +27,7 @@ def test_funnel_boolean_sums():
         "SMA200": [90, 90, 90]
     })
     
-    res = compute_funnel_booleans(df)
+    res = compute_funnel_booleans(df, as_of_session="2026-09-16")
     assert res["passed_data_quality"].sum() == 2
     assert res["passed_liquidity"].sum() == 2
     assert res["passed_all"].sum() == 1 # Only A passes all

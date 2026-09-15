@@ -127,7 +127,7 @@ def calculate_entry_quality(df: pd.DataFrame, pattern_series: pd.Series) -> pd.S
     
     # Volume (10%):
     vol_sma20 = df['Volume'].rolling(20).mean()
-    vol_score = np.where(df['Volume'] > vol_sma20 * 1.2, 10, np.where(df['Volume'] > vol_sma20, 5, 0))
+    vol_score = np.where(df['Volume'] > vol_sma20 * V4_CONFIG["VOLUME_RVOL_MIN"], 10, np.where(df['Volume'] > vol_sma20, 5, 0))
     
     # Momentum (10%):
     mom_score = np.where(df['Close'] > df['Close'].shift(5), 10, 0)
@@ -150,7 +150,7 @@ def calculate_entry_quality(df: pd.DataFrame, pattern_series: pd.Series) -> pd.S
         conf_score[-1] = 0
     
     # Liquidity (5%):
-    liq_score = np.where(df['Volume'] * df['Close'] > 10000000, 5, 0) # 1Cr turnover
+    liq_score = np.where(df['Volume'] * df['Close'] > V4_CONFIG["LIQUIDITY_THRESHOLD"], 5, 0) # 1Cr turnover
     
     total_score = geom_score + loc_score + trend_score + vol_score + mom_score + rs_score + volatility_score + conf_score + liq_score
     
