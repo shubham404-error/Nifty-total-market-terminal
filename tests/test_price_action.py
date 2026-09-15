@@ -19,21 +19,21 @@ def pad_df(df, target_len=20):
 
 def test_bullish_engulfing():
     df = pd.DataFrame({"Open": [105, 94], "High": [106, 110], "Low": [94, 90], "Close": [95, 108], "Volume":[1000, 2000]})
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Bullish Engulfing"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Bullish Engulfing"
 
 def test_hammer():
-    df = pd.DataFrame({"Open": [100], "High": [102], "Low": [90], "Close": [101], "Volume":[1000]})
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Hammer"
+    df = pd.DataFrame({"Open": [100], "High": [101.5], "Low": [90], "Close": [101], "Volume":[1000]})
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Hammer"
     
 def test_harami():
     # Make the inside bar very small so range_atr_ratio < 0.8
     df = pd.DataFrame({"Open": [90, 101], "High": [115, 101.5], "Low": [85, 100.5], "Close": [110, 101], "Volume":[1000, 1000]})
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Harami"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Harami"
     
 def test_inverted_hammer():
     # Close > Open avoids overlapping with shooting star test
     df = pd.DataFrame({"Open": [99], "High": [110], "Low": [98], "Close": [100], "Volume":[1000]})
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Inverted Hammer"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Inverted Hammer"
     
 def test_morning_star():
     df = pd.DataFrame({
@@ -43,7 +43,7 @@ def test_morning_star():
         "Close":[99,  101, 109],
         "Volume":[1000, 1000, 1000]
     })
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Morning Star"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Morning Star"
     
 def test_inside_bar_breakout():
     df = pd.DataFrame({
@@ -53,19 +53,19 @@ def test_inside_bar_breakout():
         "Close":[108, 102, 111],
         "Volume":[1000, 1000, 1000]
     })
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Inside Bar Breakout"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Inside Bar Breakout"
     
 def test_strong_breakout_candle():
     df = pd.DataFrame({"Open": [90], "High": [111], "Low": [89], "Close": [110], "Volume":[1000]})
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Strong Breakout Candle"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Strong Breakout Candle"
     
 def test_bearish_engulfing():
     df = pd.DataFrame({"Open": [95, 109], "High": [110, 111], "Low": [90, 89], "Close": [108, 94], "Volume":[1000, 2000]})
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Bearish Engulfing"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Bearish Engulfing"
     
 def test_shooting_star():
     df = pd.DataFrame({"Open": [100], "High": [110], "Low": [98], "Close": [99], "Volume":[1000]})
-    assert detect_patterns(pad_df(df)).iloc[-1] == "Shooting Star"
+    assert detect_patterns(pad_df(df))[0].iloc[-1] == "Shooting Star"
 
 def test_entry_quality_bounds():
     df = pd.DataFrame({
@@ -75,7 +75,7 @@ def test_entry_quality_bounds():
         "Close": np.random.uniform(90, 110, 100),
         "Volume":np.random.uniform(1000, 5000, 100)
     })
-    patterns = detect_patterns(df)
+    patterns = detect_patterns(df)[0]
     quality = calculate_entry_quality(df, patterns)
     assert quality.min() >= 0
     assert quality.max() <= 100
@@ -86,8 +86,8 @@ def test_no_lookahead_bias():
     
     df2 = pd.concat([df1, pd.DataFrame({"Open": [108], "High": [112], "Low": [105], "Close": [110], "Volume":[1000]})], ignore_index=True)
     
-    pat1 = detect_patterns(df1)
-    pat2 = detect_patterns(df2)
+    pat1 = detect_patterns(df1)[0]
+    pat2 = detect_patterns(df2)[0]
     
     assert pat1.iloc[-1] == pat2.iloc[-2]
 
@@ -99,6 +99,6 @@ def test_entry_quality_variance():
         "Close": np.random.uniform(90, 110, 100),
         "Volume":np.random.uniform(1000, 5000, 100)
     })
-    patterns = detect_patterns(df)
+    patterns = detect_patterns(df)[0]
     quality = calculate_entry_quality(df, patterns)
     assert quality.var() > 0

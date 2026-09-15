@@ -28,6 +28,25 @@ def init_regime_db():
 def update_market_regime(date_str: str, snapshot_df: pd.DataFrame, index_stage: int) -> dict:
     init_regime_db()
     
+    if not is_valid_session(date_str):
+        # Return previous state without updating persistence
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            df_hist = pd.read_sql("SELECT * FROM regime_history ORDER BY date DESC LIMIT 1", conn)
+        if not df_hist.empty:
+            last = df_hist.iloc[0]
+            return {
+                "Regime": last["regime"],
+                "Breadth20": last["breadth_20"],
+                "BreadthTrend": last["breadth_trend"],
+                "StructuralHealth": last["structural_health"],
+                "IndexStage": last["index_stage"],
+                "CrisisPersistence": last["crisis_persistence"]
+            }
+        else:
+            return {"Regime": "NEUTRAL", "Breadth20": 0.0, "BreadthTrend": "Flat", "StructuralHealth": 0.0, "IndexStage": index_stage, "CrisisPersistence": 0}
+
+    
     # BreadthDaily_t
     eligible = snapshot_df[snapshot_df["HistoryEligible"] == True]
     if len(eligible) > 0:
@@ -45,7 +64,7 @@ def update_market_regime(date_str: str, snapshot_df: pd.DataFrame, index_stage: 
     
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
-        df_hist = pd.read_sql("SELECT * FROM regime_history ORDER BY date", conn)
+        df_hist = pd.read_sql(f"SELECT * FROM regime_history WHERE date <= '{date_str}' ORDER BY date", conn)
         
     if not df_hist.empty:
         df_hist["date"] = pd.to_datetime(df_hist["date"])
@@ -84,25 +103,36 @@ def update_market_regime(date_str: str, snapshot_df: pd.DataFrame, index_stage: 
     # Previous crisis persistence
     if len(df_hist) > 1 and "crisis_persistence" in df_hist.columns:
         prev_persistence = int(df_hist["crisis_persistence"].iloc[-2]) if not pd.isna(df_hist["crisis_persistence"].iloc[-2]) else 0
+        prev_regime = str(df_hist["regime"].iloc[-2])
+        print(f"DEBUG: date={date_str}, iloc[-2]={df_hist.index[-2]}, prev_reg={prev_regime}, prev_pers={prev_persistence}")
     else:
         prev_persistence = 0
+        prev_regime = "NEUTRAL"
         
     # Crisis condition
     crisis_condition = (index_stage == 4) and (breadth_20 < V4_CONFIG["BREADTH_CRISIS_THRESHOLD"])
+    
     if crisis_condition:
         curr_persistence = prev_persistence + 1
     else:
-        curr_persistence = max(0, prev_persistence - 1)
-        
-    if curr_persistence >= V4_CONFIG["CRISIS_PERSISTENCE"]:
+        if prev_regime == "CRISIS":
+            curr_persistence = prev_persistence - 1
+        else:
+            curr_persistence = 0
+            
+    if prev_regime == "CRISIS" and curr_persistence > (V4_CONFIG["CRISIS_PERSISTENCE"] - V4_CONFIG["CRISIS_EXIT_PERSISTENCE"]):
         regime = "CRISIS"
+        curr_persistence = min(curr_persistence, V4_CONFIG["CRISIS_PERSISTENCE"])
+    elif curr_persistence >= V4_CONFIG["CRISIS_PERSISTENCE"]:
+        regime = "CRISIS"
+        curr_persistence = V4_CONFIG["CRISIS_PERSISTENCE"]
     elif index_stage == 4 or breadth_20 < V4_CONFIG["BREADTH_DEFENSIVE_THRESHOLD"] or structural_health <= 0:
         regime = "DEFENSIVE"
     elif index_stage in {1, 2} and breadth_20 >= V4_CONFIG["BREADTH_BULLISH_THRESHOLD"] and structural_health > 0:
         regime = "BULLISH"
     else:
-        regime = "NEUTRAL"
-        
+        regime = "NEUTRAL" 
+
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
             INSERT OR REPLACE INTO regime_history 

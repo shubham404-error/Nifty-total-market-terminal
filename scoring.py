@@ -69,7 +69,7 @@ def compute_funnel_booleans(snapshot: pd.DataFrame) -> pd.DataFrame:
     snapshot["passed_stage"] = snapshot.get("Stage", -1).isin([1, 2])
     
     # 4. LEADERSHIP (Hard Gate)
-    snapshot["passed_leadership"] = pd.to_numeric(snapshot.get("Raw_RS_Rating", 0), errors="coerce") >= V4_CONFIG["RS_RATING_MIN"]
+    snapshot["passed_leadership"] = pd.to_numeric(snapshot.get("RS_Rating", 0), errors="coerce") >= V4_CONFIG["RS_RATING_MIN"]
     
     # 5. CONFLUENCE (Hard Gate)
     snapshot["passed_confluence"] = pd.to_numeric(snapshot.get("ConvergenceScore", 0), errors="coerce") >= current_regime_threshold

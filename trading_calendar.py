@@ -1,7 +1,7 @@
 ﻿import pandas as pd
 import exchange_calendars as xcals
 
-_cal = xcals.get_calendar("XNSE")
+_cal = xcals.get_calendar("XBOM")
 
 def is_valid_session(date) -> bool:
     return _cal.is_session(pd.Timestamp(date))

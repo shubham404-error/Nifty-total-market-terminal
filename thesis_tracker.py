@@ -2,7 +2,9 @@
 import pandas as pd
 import json
 
-def evaluate_decay(current_snapshot_row: pd.Series, original_thesis_dict: dict) -> tuple:
+def evaluate_decay(current_snapshot_row: pd.Series, original_thesis_dict: dict, previous_decay_state: str = "INTACT", consecutive_closes_below_200sma: int = 0) -> tuple:
+    if previous_decay_state == "THESIS_BROKEN":
+        return "THESIS_BROKEN", ["Thesis previously broken — permanent"], []
     """Returns (DecayState, DecayReasons, DecayFactorGroups)"""
     reasons = []
     groups = set()
@@ -45,9 +47,15 @@ def evaluate_decay(current_snapshot_row: pd.Series, original_thesis_dict: dict) 
         groups.add("LIQUIDITY")
         
     # Evaluate severity
-    major_structural = (current_snapshot_row.get("Stage") == 4) or (current_snapshot_row.get("Close", 0) < current_snapshot_row.get("SMA200", 0))
-    # NOTE: THESIS_BROKEN requires Stage 4 or 2 consecutive closes below 200 SMA. 
-    # For now, we do a basic implementation.
+    sma200_slope = current_snapshot_row.get("SMA200Slope20", 0) # Fallback to 0 if not present
+    
+    major_structural = (
+        current_snapshot_row.get("Stage") == 4
+        or (
+            consecutive_closes_below_200sma >= 2
+            and sma200_slope <= 0
+        )
+    )
     
     if major_structural:
         state = "THESIS_BROKEN"

@@ -663,6 +663,11 @@ def latest_snapshot(
         snapshot.loc[eligible, f"RS{label}Pct"] = (
             snapshot.loc[eligible, ret_col].rank(pct=True, method="average") * 100
         )
+        
+    from stage_rs import scale_rs_ratings
+    eligible_rs = snapshot["Bars"] >= max(RS_PERIODS.values()) + 1
+    snapshot["RS_Rating"] = pd.NA
+    snapshot.loc[eligible_rs, "RS_Rating"] = scale_rs_ratings(snapshot.loc[eligible_rs, "Raw_RS_Rating"])
 
     snapshot["LiquidityBucket"] = snapshot["AvgTradedValue20"].apply(_liquidity_bucket)
     snapshot["LiquidityEligible"] = snapshot["AvgTradedValue20"].fillna(0) >= LIQUIDITY_THRESHOLD

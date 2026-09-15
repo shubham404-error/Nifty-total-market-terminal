@@ -37,6 +37,20 @@ pages = {
             default=True,
         ),
     ],
+    "Monitor": [
+        st.Page(
+            market_health_page,
+            title="Market Health",
+            icon="🩺",
+            url_path="market-health"
+        ),
+        st.Page(
+            positions_at_risk_page,
+            title="Positions at Risk",
+            icon="🚨",
+            url_path="positions-at-risk"
+        ),
+    ],
     "Scan": [
         st.Page(
             scan_page,
