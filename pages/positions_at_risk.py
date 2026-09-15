@@ -8,6 +8,8 @@ def positions_at_risk_page():
     st.markdown("Monitor decay in the original investment thesis for active signals.")
     
     try:
+        from signal_ledger import init_ledger_db
+        init_ledger_db()
         with sqlite3.connect("data/signal_ledger.sqlite") as conn:
             df = pd.read_sql("SELECT * FROM signal_ledger WHERE Status = 'ACTIVE' ORDER BY SignalDate DESC", conn)
             

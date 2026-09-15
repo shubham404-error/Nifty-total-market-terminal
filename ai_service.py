@@ -20,7 +20,7 @@ AI_ACTIONS = ('STRONG BUY', 'BUY', 'ACCUMULATE', 'HOLD / MONITOR', 'WAIT FOR PUL
 def _ai_json_value(value):
     if pd.isna(value):
         return None
-    if isinstance(value, (pd.Timestamp, datetime)):
+    if isinstance(value, (pd.Timestamp, datetime.datetime, datetime.date)):
         return str(value)
     if hasattr(value, "item"):
         try:

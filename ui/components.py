@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import base64
 from pathlib import Path
+from constants import AI_STRATEGY_PREFILTER_SCORE
 from state import _current_scan_id
 from engine import latest_snapshot, convergence_table
 

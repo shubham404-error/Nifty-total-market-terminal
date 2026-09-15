@@ -21,8 +21,6 @@ def convergence_page():
     c3.metric("VOLUME BREAKOUTS",f"{int(df['Breakout20'].sum()):,}")
     c4.metric("LIQUID",f"{int(df['LiquidityEligible'].sum()):,}")
 
-    st.toggle("Use Confluence v2 (Shadow Mode - RSI fix)", value=False, key="use_confluence_v2")
-
     f1,f2=st.columns(2)
     with f1: min_score=st.slider("Minimum setup score",0,100,60,5)
     with f2: setup_filter=st.selectbox("Setup type",["All"]+sorted([x for x in df['Setup'].dropna().unique() if x!='No active setup']))

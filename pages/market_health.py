@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import sqlite3
 import pandas as pd
 
@@ -7,6 +7,8 @@ def market_health_page():
     st.markdown("Monitor broad market participation and trend.")
     
     try:
+        from market_regime import init_regime_db
+        init_regime_db()
         with sqlite3.connect("data/signal_ledger.sqlite") as conn:
             df = pd.read_sql("SELECT * FROM regime_history ORDER BY date DESC", conn)
             
