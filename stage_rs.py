@@ -1,4 +1,5 @@
-﻿import pandas as pd
+from decision_config import V4_CONFIG
+import pandas as pd
 import numpy as np
 
 def calculate_mansfield_rs(stock_close: pd.Series, bench_close: pd.Series) -> pd.Series:

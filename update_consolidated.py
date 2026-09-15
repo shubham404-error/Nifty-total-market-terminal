@@ -1,4 +1,4 @@
-﻿import os
+import os
 import glob
 
 files_to_consolidate = glob.glob("**/*.py", recursive=True) + glob.glob("**/*.txt", recursive=True) + glob.glob("**/*.md", recursive=True)

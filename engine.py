@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from decision_config import V4_CONFIG
 
 import io
 import time
@@ -343,9 +344,9 @@ def download_prices(
     as_of_session: str = None,
 ) -> tuple[pd.DataFrame, list[str]]:
     if as_of_session:
-        end = pd.to_datetime(as_of_session).date() + timedelta(days=1)
+        from trading_calendar import next_valid_session; end = next_valid_session(as_of_session).date()
     else:
-        end = date.today() + timedelta(days=1)
+        from trading_calendar import next_valid_session; end = next_valid_session(date.today()).date()
     start = end - timedelta(days=int(years * 365.25))
 
     tickers = universe["Yahoo Symbol"].tolist()
@@ -443,7 +444,7 @@ def rsi_wilder(close: pd.Series, period: int = 14) -> pd.Series:
 # Feature configuration
 # -------------------------------------------------------------------
 RS_PERIODS = {"1M": 21, "3M": 63, "6M": 126, "12M": 252}
-LIQUIDITY_THRESHOLD = 1_00_00_000  # ₹1 crore average daily traded value
+LIQUIDITY_THRESHOLD = V4_CONFIG["LIQUIDITY_THRESHOLD"]  # ₹1 crore average daily traded value
 
 
 def _safe_ratio(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
@@ -453,7 +454,7 @@ def _safe_ratio(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
 def _liquidity_bucket(value: float | None) -> str:
     if value is None or pd.isna(value):
         return "Unknown"
-    if value < 1_00_00_000:
+    if value < V4_CONFIG["LIQUIDITY_THRESHOLD"]:
         return "Illiquid"
     if value < 5_00_00_000:
         return "Low Liquidity"
@@ -590,15 +591,15 @@ def calculate_indicators(
         r189 = get_return(close, 189)
         r252 = get_return(close, 252)
         frame["Raw_RS_Rating"] = 0.40 * r63 + 0.20 * r126 + 0.20 * r189 + 0.20 * r252
-        frame["HistoryEligible"] = ~close.shift(252).isna()
+        frame["HistoryEligible"] = ~close.shift(V4_CONFIG["MIN_HISTORY_BARS"]).isna()
 
         # ---- FILTER 2: CANDLESTICK ENTRY SETUP ENGINE ----
         frame["Pattern"], frame["EntryPattern"] = detect_patterns(frame)
         frame["Entry_Quality"] = calculate_entry_quality(frame, frame["Pattern"])
         
-        trend_aligned = frame["Stage"].isin([1, 2]) & (frame["SMA50Slope20"] >= 0.00) & (frame["Close"] >= 0.98 * frame["SMA50"])
-        location_valid = ((frame["Close"] - frame["SMA50"]) / frame["SMA50"]).abs() <= 0.03
-        volume_confirmed = frame["VolumeRatio"] >= 1.20
+        trend_aligned = frame["Stage"].isin([1, 2]) & (frame["SMA50Slope20"] >= V4_CONFIG["TREND_SMA50_SLOPE_MIN"]) & (frame["Close"] >= V4_CONFIG["TREND_CLOSE_VS_SMA50_MIN"] * frame["SMA50"])
+        location_valid = ((frame["Close"] - frame["SMA50"]) / frame["SMA50"]).abs() <= V4_CONFIG["LOCATION_MAX_DISTANCE_50SMA"]
+        volume_confirmed = frame["VolumeRatio"] >= V4_CONFIG["VOLUME_RVOL_MIN"]
         frame["EntrySetupQualified"] = trend_aligned & location_valid & volume_confirmed
 
 
@@ -613,6 +614,7 @@ def latest_snapshot(
     universe: pd.DataFrame,
     ema_long: int = 255,
     rsi_period: int = 14,
+    as_of_session: str = None,
 ) -> pd.DataFrame:
     if indicators.empty:
         return pd.DataFrame()
@@ -634,6 +636,10 @@ def latest_snapshot(
 
     for ticker, frame in indicators.groupby("Yahoo Symbol", sort=False):
         ordered = frame.sort_values("Date")
+        if as_of_session:
+            ordered = ordered[ordered["Date"] <= as_of_session]
+            if ordered.empty:
+                continue
         row = ordered.iloc[-1]
         company = meta.get(ticker, {"Symbol": ticker.replace(".NS", ""), "Company": ""})
         bars = len(ordered)
@@ -1108,3 +1114,7 @@ def fundamental_snapshot(ticker: str) -> dict:
         return defaults
 from stage_rs import calculate_stage, calculate_mansfield_rs
 from price_action import detect_patterns, calculate_entry_quality, compute_geometry
+def historical_snapshot(indicators: pd.DataFrame, universe: pd.DataFrame, as_of_session: str, n_sessions_ago: int, ema_long: int = 255, rsi_period: int = 14) -> pd.DataFrame:
+    from trading_calendar import get_previous_sessions
+    target_session = get_previous_sessions(as_of_session, n_sessions_ago).strftime("%Y-%m-%d")
+    return latest_snapshot(indicators, universe, ema_long, rsi_period, target_session)

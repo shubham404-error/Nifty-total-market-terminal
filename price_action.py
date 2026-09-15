@@ -1,4 +1,5 @@
-﻿import pandas as pd
+from decision_config import V4_CONFIG
+import pandas as pd
 import numpy as np
 
 def calculate_atr(high: pd.Series, low: pd.Series, close: pd.Series, window=14) -> pd.Series:

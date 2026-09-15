@@ -35,6 +35,12 @@ def scan_page():
     )
 
     c1, c2, c3, c4 = st.columns([1.5, 1, 1, 1])
+    c_as_of, _ = st.columns([1, 3])
+    with c_as_of:
+        import datetime
+        from trading_calendar import get_previous_sessions
+        # Default to previous session if today is not a valid session or still open
+        as_of_date = st.date_input("As of session", value="today", max_value="today")
 
     with c1:
         universe_name = st.selectbox(
@@ -96,6 +102,7 @@ def scan_page():
                     years=history_years,
                     batch_size=batch_size,
                     _progress_callback=update,
+                    as_of_session=str(as_of_date),
                 )
 
             if prices.empty:
@@ -104,7 +111,7 @@ def scan_page():
 
             status.write("Calculating indicators...")
             indicators = calculate_indicators(prices)
-            snapshot = latest_snapshot(indicators, universe)
+            snapshot = latest_snapshot(indicators, universe, as_of_session=str(as_of_date))
             snapshot = add_days_since_cross(indicators, snapshot)
             convergence = convergence_table(snapshot, version="v1")
             convergence_v2 = convergence_table(snapshot, version="v2")
@@ -126,7 +133,7 @@ def scan_page():
             st.session_state["convergence"] = convergence
             st.session_state["convergence_v2"] = convergence_v2
             st.session_state["failures"] = failures
-            st.session_state["scan_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+            st.session_state["scan_date"] = str(as_of_date)
             scan_basis = snapshot[[c for c in ["Symbol", "Date", "Close"] if c in snapshot.columns]].copy()
             scan_id = "scan-" + hashlib.sha256(scan_basis.to_csv(index=False).encode()).hexdigest()[:16]
             _invalidate_strategy_state(scan_id)

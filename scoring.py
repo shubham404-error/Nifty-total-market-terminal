@@ -196,6 +196,7 @@ def build_final_buy_list(
         
         try:
             from signal_ledger import add_signal
+            from trading_calendar import next_valid_session
             import datetime
             signal_date = as_of_session if as_of_session else str(datetime.date.today())
             nifty_rows = source[source["Symbol"].isin(["^NSEI", "NIFTY 50", "Nifty 50"])]
@@ -218,7 +219,7 @@ def build_final_buy_list(
                 add_signal(
                     symbol=r["Symbol"],
                     signal_date=signal_date,
-                    entry_date=None,
+                    entry_date=str(next_valid_session(signal_date).date()),
                     entry_price=None,
                     signal_close=float(s_row.get("Close", 0)) if pd.notna(s_row.get("Close")) else 0.0,
                     original_thesis=original_thesis,

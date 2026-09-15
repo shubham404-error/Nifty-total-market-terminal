@@ -1,4 +1,4 @@
-﻿from decision_config import V4_CONFIG
+from decision_config import V4_CONFIG
 import pandas as pd
 import json
 
