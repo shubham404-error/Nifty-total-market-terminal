@@ -1,10 +1,12 @@
-import streamlit as st
+﻿import streamlit as st
 import sqlite3
 import pandas as pd
+from ui.components import get_snapshot, terminal_header, require_scan
+import plotly.express as px
 
-def market_health_page():
-    st.title("🩺 Market Health")
-    st.markdown("Monitor broad market participation and trend.")
+def market_structure_page():
+    require_scan()
+    terminal_header("Market Structure", "Global index-health dashboard showing Nifty 50 MAs, Breadth, and Stage Distribution.")
     
     try:
         from market_regime import init_regime_db
@@ -30,12 +32,20 @@ def market_health_page():
             else:
                 break
         c2.metric("Days in Regime", days_in_regime)
-        c3.metric("Breadth 20", f"{current['breadth_20']:.2%}")
+        c3.metric("Breadth (Above 20 SMA)", f"{current['breadth_20']:.2%}")
         c4.metric("Breadth Trend", current["breadth_trend"])
         
         c5, c6 = st.columns(2)
-        c5.metric("Structural Health", f"{current['structural_health']:.2%}")
+        c5.metric("Structural Health (Above 50/200)", f"{current['structural_health']:.2%}")
         c6.metric("Index Stage", current["index_stage"])
+        
+        snapshot = get_snapshot()
+        
+        st.subheader("Stage Distribution")
+        stage_counts = snapshot["Stage"].value_counts().reset_index()
+        stage_counts.columns = ["Stage", "Count"]
+        fig = px.bar(stage_counts, x="Stage", y="Count", title="Current Market Stage Distribution", text_auto=True)
+        st.plotly_chart(fig, use_container_width=True)
         
         st.subheader("Regime Transition History")
         transitions = []
@@ -44,15 +54,12 @@ def market_health_page():
         for idx, row in df.iloc[::-1].iterrows(): # iterate chronologically
             if row["regime"] != last_r:
                 if last_r is not None:
-                    transitions.append({"Transition": f"{last_r} → {row['regime']}", "Date": row["date"]})
+                    transitions.append({"Transition": f"{last_r} -> {row['regime']}", "Date": row["date"]})
                 last_r = row["regime"]
         
         if transitions:
             t_df = pd.DataFrame(transitions[::-1])
             st.dataframe(t_df, hide_index=True)
             
-        st.subheader("Raw History")
-        st.dataframe(df, hide_index=True)
-        
     except Exception as e:
-        st.error(f"Error loading market health: {e}")
+        st.error(f"Error loading market structure: {e}")

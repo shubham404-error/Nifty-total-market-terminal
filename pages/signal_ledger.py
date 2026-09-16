@@ -3,9 +3,9 @@ import sqlite3
 import pandas as pd
 import json
 
-def positions_at_risk_page():
+def signal_ledger_page():
     st.title("🚨 Positions at Risk (Thesis Monitoring)")
-    st.markdown("Monitor decay in the original investment thesis for active signals.")
+    st.markdown("Monitor active signals and track their thesis decay.")
     
     try:
         from signal_ledger import init_ledger_db

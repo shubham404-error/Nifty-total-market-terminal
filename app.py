@@ -7,12 +7,14 @@ from ui.components import render_sidebar_brand, render_terminal_footer
 from pages.home import home_page
 from pages.scan import scan_page
 from pages.emerging import emerging_setups_page
-from pages.strategies import regime_page, momentum_page, swing_page, pullback_page
+from pages.strategies import pullback_page
 from pages.ai_analyst import nifty_ai_page
 from pages.confluence import convergence_page
 from pages.buying_list import buying_list_page
-from pages.market_health import market_health_page
-from pages.positions_at_risk import positions_at_risk_page
+from pages.market_structure import market_structure_page
+from pages.candlesticks import candlesticks_page
+from pages.rs_and_stage import rs_and_stage_page
+from pages.signal_ledger import signal_ledger_page
 
 # Paths for setup
 APP_FAVICON_PATH = Path("assets/nifty_favicon.png")
@@ -28,91 +30,73 @@ st.set_page_config(
 inject_styles()
 
 pages = {
-    "Start": [
+    "MARKET": [
         st.Page(
             home_page,
-            title="Home",
-            icon="🏠",
+            title="User Guide",
+            icon="📖",
             url_path="home",
             default=True,
         ),
-    ],
-    "Monitor": [
-        st.Page(
-            market_health_page,
-            title="Market Health",
-            icon="🩺",
-            url_path="market-health"
-        ),
-        st.Page(
-            positions_at_risk_page,
-            title="Positions at Risk",
-            icon="🚨",
-            url_path="positions-at-risk"
-        ),
-    ],
-    "Scan": [
         st.Page(
             scan_page,
             title="Scan Engine",
-            icon="🔄",
+            icon="📡",
             url_path="scan-engine",
         ),
-    ],
-    "Discover": [
         st.Page(
-            emerging_setups_page,
-            title="Emerging Setups",
-            icon="🌱",
-            url_path="emerging-setups",
-        ),
-    ],
-    "Explore": [
-        st.Page(
-            regime_page,
-            title="Market Regime",
-            icon="📐",
-            url_path="market-regime",
-        ),
-        st.Page(
-            momentum_page,
-            title="9/21 Momentum",
-            icon="📈",
-            url_path="momentum-9-21",
-        ),
-        st.Page(
-            swing_page,
-            title="20/50 Swing",
+            market_structure_page,
+            title="Market Structure",
             icon="📊",
-            url_path="swing-20-50",
+            url_path="market-structure"
+        ),
+    ],
+    "SIGNALS": [
+        st.Page(
+            candlesticks_page,
+            title="Candlestick Scanner",
+            icon="🕯️",
+            url_path="candlesticks",
+        ),
+        st.Page(
+            rs_and_stage_page,
+            title="RS & Stage",
+            icon="🚀",
+            url_path="rs-and-stage",
         ),
         st.Page(
             pullback_page,
             title="EMA 255 Pullback",
-            icon="↔️",
+            icon="🧲",
             url_path="ema-255-pullback",
         ),
     ],
-    "AI": [
-        st.Page(
-            nifty_ai_page,
-            title="Nifty AI Analyst",
-            icon="✨",
-            url_path="nifty-ai",
-        ),
-    ],
-    "Decide": [
+    "ANALYSIS": [
         st.Page(
             convergence_page,
-            title="Confluence",
-            icon="🎯",
+            title="Confluence Builder",
+            icon="🧪",
             url_path="confluence",
         ),
         st.Page(
+            nifty_ai_page,
+            title="Nifty AI Analyst",
+            icon="🤖",
+            url_path="nifty-ai",
+        ),
+    ],
+    "TRACKING": [
+        st.Page(
             buying_list_page,
             title="Final Buy List",
-            icon="⭐",
+            icon="🛒",
             url_path="final-buy-list",
+        ),
+        st.Page(
+            signal_ledger_page,
+            title="Signal Ledger",
+            icon="📓",
+            url_path="signal-ledger"
         ),
     ],
 }

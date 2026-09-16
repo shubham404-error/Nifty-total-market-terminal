@@ -38,7 +38,7 @@ def detect_patterns(df: pd.DataFrame) -> pd.Series:
     body1 = (C1 - O1).abs()
     
     # 1. Hammer: Reversal. Lower wick >> body. close_loc > 0.5
-    EPS = 1e-8
+    EPS = V4_CONFIG["CANDLE_EPS"]
     candle_range = df['High'] - df['Low']
     lower_wick = df[['Open', 'Close']].min(axis=1) - df['Low']
     upper_wick = df['High'] - df[['Open', 'Close']].max(axis=1)
@@ -78,7 +78,7 @@ def detect_patterns(df: pd.DataFrame) -> pd.Series:
     is_inside_bo = prev_inside & (df['Close'] > H1)
     
     # 7. Strong Breakout Candle: large body, closing near high
-    is_strong_bo = (df['body_atr_ratio'] > 1.2) & (df['close_loc'] > 0.7) & (df['Close'] > df['Open'])
+    is_strong_bo = (df['body_atr_ratio'] > V4_CONFIG["VOLUME_RVOL_MIN"]) & (df['close_loc'] > 0.7) & (df['Close'] > df['Open'])
     
     # 8. Bearish Engulfing
     is_bear_engulf = (C1 > O1) & (df['Close'] < O1) & (df['Open'] > C1) & (df['range_atr_ratio'] > 1.0)

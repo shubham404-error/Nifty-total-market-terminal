@@ -109,7 +109,7 @@ def build_final_buy_list(
         return pd.DataFrame()
 
     source = convergence.copy()
-    source = compute_funnel_booleans(source)
+    source = compute_funnel_booleans(source, as_of_session=as_of_session)
     if not FILTERS_SHADOW_MODE:
         source = source[source["passed_all"]].copy()
         

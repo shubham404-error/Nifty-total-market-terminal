@@ -20,7 +20,7 @@ def calculate_rs_rating(stock_close: pd.Series) -> dict:
     r63 = get_return(stock_close, 63)
     r126 = get_return(stock_close, 126)
     r189 = get_return(stock_close, 189)
-    r252 = get_return(stock_close, 252)
+    r252 = get_return(stock_close, V4_CONFIG["MIN_HISTORY_BARS"])
     
     raw_score = 0.40 * r63 + 0.20 * r126 + 0.20 * r189 + 0.20 * r252
     return {"raw_score": raw_score, "insufficient_data": False}

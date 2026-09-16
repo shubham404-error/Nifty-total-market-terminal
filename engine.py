@@ -412,7 +412,7 @@ def download_prices(
     # A symbol with only a handful of rows is not a valid substitute for a
     # complete download. Keep it in failures so the scan can report coverage.
     row_counts = prices.groupby("Yahoo Symbol")["Date"].nunique()
-    min_required = min(260, max(60, int(years * 252 * 0.5)))
+    min_required = min(260, max(60, int(years * V4_CONFIG["MIN_HISTORY_BARS"] * 0.5)))
     short_history = row_counts[row_counts < min_required].index.tolist()
     failures.extend(short_history)
 
@@ -443,7 +443,7 @@ def rsi_wilder(close: pd.Series, period: int = 14) -> pd.Series:
 # -------------------------------------------------------------------
 # Feature configuration
 # -------------------------------------------------------------------
-RS_PERIODS = {"1M": 21, "3M": 63, "6M": 126, "12M": 252}
+RS_PERIODS = {"1M": 21, "3M": 63, "6M": 126, "12M": V4_CONFIG["MIN_HISTORY_BARS"]}
 LIQUIDITY_THRESHOLD = V4_CONFIG["LIQUIDITY_THRESHOLD"]  # ₹1 crore average daily traded value
 
 
@@ -589,7 +589,7 @@ def calculate_indicators(
         r63 = get_return(close, 63)
         r126 = get_return(close, 126)
         r189 = get_return(close, 189)
-        r252 = get_return(close, 252)
+        r252 = get_return(close, V4_CONFIG["MIN_HISTORY_BARS"])
         frame["Raw_RS_Rating"] = 0.40 * r63 + 0.20 * r126 + 0.20 * r189 + 0.20 * r252
         frame["HistoryEligible"] = ~close.shift(V4_CONFIG["MIN_HISTORY_BARS"]).isna()
 
