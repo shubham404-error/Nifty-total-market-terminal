@@ -498,6 +498,7 @@ def calculate_indicators(
         frame["SMA20"] = close.rolling(20, min_periods=20).mean()
         frame["SMA50"] = close.rolling(50, min_periods=50).mean()
         frame["SMA200"] = close.rolling(200, min_periods=200).mean()
+        frame["RollingHigh20"] = high.rolling(20, min_periods=20).max()
         
         # V4.1: 20-day slope of the 50 SMA for EntrySetupQualified
         sma50 = frame["SMA50"]
@@ -622,7 +623,7 @@ def latest_snapshot(
     meta = universe.set_index("Yahoo Symbol")[["Symbol", "Company"]].to_dict("index")
     rows = []
     latest_columns = [
-        "Close", "EMA9", "EMA21", "SMA20", "SMA50", "SMA200", "SMA50Slope20",
+        "Close", "EMA9", "EMA21", "SMA20", "SMA50", "SMA200", "SMA50Slope20", "RollingHigh20",
         f"EMA{ema_long}", f"RSI{rsi_period}", "EMA255DistancePct",
         "BullMomentum", "BullSwing", "BullRegime", "MomentumFresh",
         "SwingFresh", "RegimeFresh", "Pullback", "ATR14", "ATRPercent",

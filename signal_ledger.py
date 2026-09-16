@@ -24,7 +24,8 @@ def init_ledger_db():
                 DecayFactorGroups TEXT,
                 OriginalThesis TEXT,
                 CurrentState TEXT,
-                DataStatus TEXT
+                DataStatus TEXT,
+                CloseReason TEXT
             )
         """)
 
