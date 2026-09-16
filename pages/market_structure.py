@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import sqlite3
 import pandas as pd
 from ui.components import get_snapshot, terminal_header, require_scan
@@ -19,6 +19,37 @@ def market_structure_page():
             return
             
         current = df.iloc[0]
+        
+        # Calculate Index MA Stack
+        st.subheader("Nifty 50 Index MA Stack")
+        try:
+            import yfinance as yf
+            nifty = yf.download("^NSEI", period="2y", progress=False, multi_level_index=False)
+            if not nifty.empty and "Close" in nifty.columns:
+                close = nifty["Close"].iloc[-1]
+                ema21 = nifty["Close"].ewm(span=21, adjust=False).mean().iloc[-1]
+                sma50 = nifty["Close"].rolling(50).mean().iloc[-1]
+                sma200 = nifty["Close"].rolling(200).mean().iloc[-1]
+                ema250 = nifty["Close"].ewm(span=250, adjust=False).mean().iloc[-1]
+                
+                m1, m2, m3, m4, m5 = st.columns(5)
+                m1.metric("NIFTY 50", f"{close:.2f}")
+                m2.metric("21 EMA", f"{ema21:.2f}", f"{(close/ema21)-1:.2%}")
+                m3.metric("50 SMA", f"{sma50:.2f}", f"{(close/sma50)-1:.2%}")
+                m4.metric("200 SMA", f"{sma200:.2f}", f"{(close/sma200)-1:.2%}")
+                m5.metric("250 EMA", f"{ema250:.2f}", f"{(close/ema250)-1:.2%}")
+                
+                stack_status = []
+                if close > ema21: stack_status.append("Price > 21 EMA")
+                if ema21 > sma50: stack_status.append("21 EMA > 50 SMA")
+                if sma50 > sma200: stack_status.append("50 SMA > 200 SMA")
+                if sma200 > ema250: stack_status.append("200 SMA > 250 EMA")
+                st.caption("Stack check: " + " | ".join(stack_status) if stack_status else "Broken Stack")
+            else:
+                st.warning("Failed to fetch Nifty 50 data.")
+        except Exception as e:
+            st.warning(f"Could not load Nifty MA stack: {e}")
+            
         st.subheader("Current Regime")
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Regime", current["regime"])

@@ -64,12 +64,6 @@ pages = {
             icon="🚀",
             url_path="rs-and-stage",
         ),
-        st.Page(
-            pullback_page,
-            title="EMA 255 Pullback",
-            icon="🧲",
-            url_path="ema-255-pullback",
-        ),
     ],
     "ANALYSIS": [
         st.Page(
