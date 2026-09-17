@@ -40,7 +40,11 @@ def buying_list_page():
     # --- V4.1 Elimination Funnel ---
     snapshot = get_snapshot().copy()
     from scoring import compute_funnel_booleans
-    snapshot = compute_funnel_booleans(snapshot)
+    scan_date = st.session_state.get("scan_date")
+    if not scan_date:
+        st.error("Missing scan date. Please run Scan Engine.")
+        return
+    snapshot = compute_funnel_booleans(snapshot, as_of_session=scan_date)
     
     universe_size = len(snapshot)
     q_pass = snapshot["passed_data_quality"].sum()

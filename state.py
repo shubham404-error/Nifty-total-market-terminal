@@ -55,7 +55,8 @@ def _ensure_ai_strategy_outputs():
         registry={}
     convergence = get_convergence()
     confluence=build_ai_confluence_pool(convergence)
-    final=build_final_buy_list(convergence,AI_DEFAULT_FINAL_BUY_CONVICTION,AI_DEFAULT_FINAL_BUY_LIQUIDITY,prefilter_score=AI_STRATEGY_PREFILTER_SCORE)
+    scan_date = st.session_state.get("scan_date")
+    final=build_final_buy_list(convergence,AI_DEFAULT_FINAL_BUY_CONVICTION,AI_DEFAULT_FINAL_BUY_LIQUIDITY,prefilter_score=AI_STRATEGY_PREFILTER_SCORE, as_of_session=scan_date)
     emerging=_build_emerging_scored(get_snapshot())
     emerging_buy=build_emerging_buy_list(emerging)
     _ai_register_strategy_output("confluence",confluence,{"minimum_score":AI_STRATEGY_PREFILTER_SCORE,"canonical_ai_pool":True,"scan_id":scan_id})
