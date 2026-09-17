@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import re
+import os
 from google import genai
 from google.genai import types
 from engine import fundamental_snapshot
@@ -404,9 +405,9 @@ def _list_ai_packet(frame, list_name):
 
 def _gemini_list_reply(question, frame, list_name, history):
     """AI second-stage review of candidates already selected by deterministic rules."""
-    api_key = st.secrets.get("GEMINI_API_KEY", None)
+    api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", None))
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing. Add it in Streamlit Secrets.")
+        raise RuntimeError("GEMINI_API_KEY is missing. Add it in Streamlit Secrets or environment variables.")
 
     candidates = _list_ai_packet(frame, list_name)
     if not candidates:
@@ -668,9 +669,9 @@ def _render_list_ai_terminal(list_name, frame, key_prefix):
 
 
 def _gemini_reply(question, context, chart_png, history):
-    api_key = st.secrets.get("GEMINI_API_KEY", None)
+    api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", None))
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing. Add it in Streamlit Secrets.")
+        raise RuntimeError("GEMINI_API_KEY is missing. Add it in Streamlit Secrets or environment variables.")
 
     _ai_consume_call()
 
